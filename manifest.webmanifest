@@ -1,0 +1,11 @@
+{
+  "name": "Drum Pad — PWA",
+  "short_name": "DrumPad",
+  "start_url": "./drums.html",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
