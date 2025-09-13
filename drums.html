@@ -1,658 +1,720 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Drum Pad</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" href="icon-512.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b0d10">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum=1, user-scalable=no, viewport-fit=cover">
+<title>Mobile-Drums – Edytor i Pad Live</title>
 <style>
-:root{
-  --bg:#0b0d10; --text:#e6edf3; --muted:#9aa4ad;
-  --pad:#1b1f24; --pad2:#14181d; --pad-active:#2d333b; --accent:#4aa3ff;
-  --topbar-h:52px; --footer-h:36px;
-  --size-min:84px; --size-vw:28vw; --size-max:160px;
-}
-*{box-sizing:border-box}
-html,body{
-  margin:0;height:100%;background:var(--bg);color:var(--text);
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-}
-body, #app{min-height:100svh}
-
-/* Top mini-bar: tytuł + hamburger */
-.topbar{
-  position:fixed;top:0;left:0;right:0;z-index:90;height:var(--topbar-h);
-  display:flex;align-items:center;gap:.6rem;
-  padding:0 .6rem env(safe-area-inset-right,12px) env(safe-area-inset-left,12px);
-  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));
-}
-.title{font-weight:800;letter-spacing:.4px;margin-left:.2rem}
-.iconbtn{
-  appearance:none;cursor:pointer;border:1px solid #2b3138;border-radius:.6rem;
-  background:var(--pad);color:var(--text);padding:.45rem .6rem;display:flex;align-items:center;gap:.4rem
-}
-.icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
-.icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
-.icon::before{top:-6px}.icon::after{top:6px}
-.muted{color:var(--muted);font-size:.9rem}
-
-/* Scena */
-#stage{
-  position:fixed;
-  top:calc(var(--topbar-h) + 4px);
-  left:0;right:0;
-  bottom:calc(env(safe-area-inset-bottom,0px) + 6px);
-  padding:.8rem;overflow:hidden;touch-action:manipulation;
-}
-.grid{
-  display:grid;gap:.8rem;
-  grid-template-columns:repeat(auto-fit,minmax(clamp(var(--size-min), var(--size-vw), var(--size-max)),1fr));
-  grid-auto-rows:minmax(clamp(72px,16vh,180px),1fr);align-content:start
-}
-.canvas{position:relative}
-.canvas .pad{position:absolute;touch-action:none}
-
-/* Pady */
-.pad{
-  background:var(--pad);border:1px solid #2b3138;border-radius:1rem;
-  display:flex;align-items:center;justify-content:center;text-align:center;
-  padding:.45rem;user-select:none;-webkit-user-select:none;font-weight:800;letter-spacing:.3px;
-  box-shadow:0 2px 0 rgba(0,0,0,.5) inset,0 6px 18px rgba(0,0,0,.25);
-  touch-action:none;font-size:16px
-}
-.pad.active{
-  background:var(--pad-active);outline:2px solid var(--accent);
-  box-shadow:0 0 0 4px rgba(74,163,255,.15),0 10px 28px rgba(0,0,0,.4) inset;
-  transform:scale(.99)
-}
-.pad.dragging{opacity:.95;outline:2px dashed var(--accent)}
-.shape-circle{border-radius:999px}
-.shape-rect{border-radius:1rem}
-.shape-hex{clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%)}
-.shape-tri{clip-path:polygon(50% 0%,0% 100%,100% 100%)}
-.shape-drum{clip-path:path("M10,50 C10,20 90,20 90,50 C90,80 10,80 10,50 Z");border-radius:0}
-
-/* Kolory kategorii */
-.c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%)}
-.c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%)}
-.c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%)}
-.c-toms{background:radial-gradient(120% 120% at 30% 30%,#2d3131,#171a1a 70%)}
-.c-cym{background:radial-gradient(120% 120% at 30% 30%,#303227,#181a12 70%)}
-.c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%)}
-.c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%)}
-
-/* NEON theme */
-body.theme-neon{
-  --bg:#070910; --text:#e9f6ff; --muted:#9cc7ff;
-  --pad:#0b1020; --pad2:#0a0e1a; --pad-active:#111a33; --accent:#00e5ff;
-}
-body.theme-neon .pad{
-  box-shadow:0 0 10px rgba(0,229,255,.25),0 8px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(0,0,0,.55);
-  text-shadow:0 0 6px rgba(0,229,255,.25);
-}
-body.theme-neon .pad.active{outline-color:#00e5ff;box-shadow:0 0 18px rgba(0,229,255,.45),inset 0 10px 28px rgba(0,0,0,.45)}
-
-/* Panel menu (hamburger) */
-#menuPanel{
-  position:fixed;inset:0;z-index:100;display:none;
-  background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);
-  padding:calc(env(safe-area-inset-top,0) + 64px) 14px calc(env(safe-area-inset-bottom,0) + 14px);
-  color:var(--text)
-}
-.menu-card{
-  margin:0 auto;max-width:720px;background:#0e1116;border:1px solid #2b3138;border-radius:1rem;
-  padding:.9rem
-}
-.menu-section{border-top:1px solid #212832;margin-top:.7rem;padding-top:.7rem}
-.menu-grid{display:grid;grid-template-columns:1fr;gap:.45rem}
-.menu-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
-.menu-row .right{display:flex;align-items:center;gap:.5rem}
-input[type="range"]{width:150px}
-.menu-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.7rem}
-.btn{appearance:none;cursor:pointer;font-weight:700;color:var(--text);background:var(--pad);border:1px solid #2b3138;border-radius:.6rem;padding:.5rem .8rem}
-.btn:active{transform:scale(.98)}
-.badge{font-size:.85rem;color:var(--muted)}
-
-/* Pasek Układu */
-#layoutBar{
-  position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(10px + env(safe-area-inset-bottom,0));
-  z-index:95;display:none;gap:.5rem
-}
-#layoutBar .btn{background:#1d2630}
-
-/* Info Jam */
-#jamInfo{
-  position:fixed;left:.6rem;top:calc(var(--topbar-h) + .6rem);z-index:85;
-  background:#0e1116;border:1px solid #2b3138;border-radius:.7rem;
-  padding:.3rem .6rem;font-size:.85rem;display:none
-}
-#jamInfo .room{color:#7bdcff}
-
-/* Start overlay */
-#tapStart{
-  position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
-  padding:2rem;text-align:center;color:var(--text);background:rgba(0,0,0,.86)
-}
-#tapStart .big{font-size:1.25rem;font-weight:800}
-#tapStart .hint{opacity:.8}
-
-/* Chrome hidden: chowamy topbar; zostaje tylko mały pływający hamburger */
-body.chrome-hidden .topbar{display:none}
-#hambit{
-  position:fixed;z-index:92;top:8px;left:8px;
-  padding:.5rem .6rem;border-radius:.6rem;border:1px solid #2b3138;background:#0d1117;color:var(--text);
-  display:none
-}
-body.chrome-hidden #hambit{display:flex}
+  :root{
+    --bg:#0f1115;
+    --panel:#181c22;
+    --panel2:#202633;
+    --text:#e8eef7;
+    --muted:#98a2b3;
+    --accent:#77c3ff;
+    --danger:#ff6b6b;
+    --ok:#5ee39c;
+    --handle:#ffffffcc;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  #app{height:100%;display:flex;flex-direction:column}
+  .topbar{
+    display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;
+    padding:.5rem .75rem;background:linear-gradient(180deg,var(--panel),var(--panel2));
+    position:sticky;top:0;z-index:1000;box-shadow:0 2px 10px #0006
+  }
+  .topbar h1{font-size:1rem;margin:0;margin-right:.5rem;white-space:nowrap;opacity:.9}
+  .topbar .sp{flex:1}
+  .btn, select, input[type="text"]{
+    background:#283041;border:1px solid #3a455b;color:var(--text);padding:.45rem .6rem;border-radius:.6rem;
+    font-size:.95rem
+  }
+  .btn:hover{filter:brightness(1.08)}
+  .btn.primary{background:#284a6b;border-color:#356a92}
+  .btn.good{background:#1f5a3f;border-color:#2b7a57}
+  .btn.danger{background:#5a2323;border-color:#7a2f2f}
+  .btn.ghost{background:transparent;border-color:#3a455b}
+  .row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .label{font-size:.8rem;color:var(--muted)}
+  #stage{
+    position:relative;flex:1;overflow:hidden;touch-action:none;
+    background: radial-gradient(1200px 800px at 50% 30%, #141821 0%, #0f1115 65%, #0b0d12 100%);
+  }
+  .pad{
+    position:absolute;display:flex;align-items:center;justify-content:center;
+    user-select:none;touch-action:none;
+    border-radius:1rem;border:2px solid #ffffff14;box-shadow:0 10px 30px #0008, inset 0 0 0 2px #0006;
+    transition: box-shadow .12s ease, transform .08s ease;
+  }
+  .pad .label{
+    color:#fff;font-weight:700;letter-spacing:.2px;text-shadow:0 2px 6px #000b;pointer-events:none;
+  }
+  .pad.flash{box-shadow:0 0 0 6px #fff2, 0 10px 30px #0009}
+  .handles{position:absolute;inset:-18px;pointer-events:none;opacity:0;transition:opacity .15s}
+  .pad.selected .handles{opacity:1}
+  .handle{
+    position:absolute;width:18px;height:18px;background:var(--handle);border:2px solid #0007;border-radius:50%;
+    box-shadow:0 2px 6px #0008;pointer-events:auto;touch-action:none
+  }
+  .h-nw{left:-18px;top:-18px;cursor:nwse-resize}
+  .h-ne{right:-18px;top:-18px;cursor:nesw-resize}
+  .h-sw{left:-18px;bottom:-18px;cursor:nesw-resize}
+  .h-se{right:-18px;bottom:-18px;cursor:nwse-resize}
+  .h-rot{
+    left:50%;transform:translateX(-50%);top:-42px;width:22px;height:22px;background:#fff;border-color:#000;cursor:grab
+  }
+  .h-rot:active{cursor:grabbing}
+  .badge{font-size:.75rem;padding:.1rem .4rem;border-radius:.4rem;background:#00000055;border:1px solid #ffffff1a}
+  .panel{
+    position:fixed;left:8px;bottom:8px;right:8px;z-index:1001;
+    display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;
+    background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)
+  }
+  .panel .section{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .hidden{display:none}
+  .sep{width:1px;height:26px;background:#ffffff1a;margin:0 .25rem}
+  /* zapobiegaj przewijaniu */
+  body, #stage{overscroll-behavior:none}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="topbar">
-    <button id="menuBtn" class="iconbtn" title="Menu"><span class="icon" aria-hidden="true"></span></button>
-    <div class="title">Drum Pad</div>
-    <div class="muted">dotknij pad, by grać</div>
-  </div>
-
-  <!-- pływający hamburger, gdy UI ukryte -->
-  <button id="hambit" class="iconbtn" title="Menu"><span class="icon"></span></button>
-
-  <div id="jamInfo">Jam ON — pokój: <span class="room" id="jamRoomLabel">—</span></div>
-
-  <div id="tapStart">
-    <div class="big">Dotknij, aby rozpocząć</div>
-    <button id="tapStartBtn" class="btn">Start audio</button>
-    <div class="hint">iOS wymaga dotknięcia ekranu, by włączyć dźwięk</div>
-  </div>
-
-  <div id="stage" class="grid"></div>
-
-  <!-- Pasek akcji Układ -->
-  <div id="layoutBar">
-    <button id="layoutSave" class="btn">Zapisz</button>
-    <button id="layoutCancel" class="btn">Anuluj</button>
-  </div>
-
-  <!-- MENU PANEL -->
-  <div id="menuPanel" aria-hidden="true">
-    <div class="menu-card">
-      <div class="menu-section">
-        <div class="menu-row"><strong>Ustawienia</strong><span class="badge">wybierz i „OK”</span></div>
-      </div>
-
-      <div class="menu-section">
-        <div class="menu-row">
-          <div>Zestaw</div>
-          <div class="right">
-            <select id="kitSelect" class="btn"></select>
-            <button id="customBtn" class="btn">Własne…</button>
-          </div>
-        </div>
-        <div class="menu-row">
-          <div>Układ</div>
-          <div class="right">
-            <button id="layoutStart" class="btn">START</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-section">
-        <div class="menu-row">
-          <div>Jam</div>
-          <div class="right">
-            <button id="jamBtn" class="btn">Jam: OFF</button>
-          </div>
-        </div>
-        <div class="menu-row">
-          <div>Metronom</div>
-          <div class="right">
-            <button id="metroBtn" class="btn">Metro: OFF</button>
-            <label class="badge">BPM</label>
-            <input id="bpm" type="range" min="40" max="220" step="1" value="100">
-            <span id="bpmVal" class="badge">100</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-section">
-        <div class="menu-row">
-          <div>Neon</div>
-          <div class="right">
-            <button id="themeBtn" class="btn">Neon: OFF</button>
-          </div>
-        </div>
-        <div class="menu-row">
-          <div>Rozmiar padów</div>
-          <div class="right">
-            <input id="size" type="range" min="80" max="130" step="1" value="100">
-          </div>
-        </div>
-        <div class="menu-row">
-          <div>Głośność</div>
-          <div class="right">
-            <input id="volume" type="range" min="0" max="1" step="0.01" value="0.9">
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-actions">
-        <button id="menuCancel" class="btn">Anuluj</button>
-        <button id="menuOk" class="btn">OK</button>
-      </div>
+    <h1>Mobile-Drums</h1>
+    <div class="row">
+      <span class="label">Tryb:</span>
+      <button id="modePlay" class="btn good">Odtwarzanie</button>
+      <button id="modeEdit" class="btn">Edycja</button>
+    </div>
+    <div class="row">
+      <span class="label">Układ:</span>
+      <select id="layoutSelect" title="Wybierz układ"></select>
+      <button id="saveBtn" class="btn primary">Zapisz</button>
+      <button id="saveAsBtn" class="btn">Zapisz jako…</button>
+      <button id="deleteBtn" class="btn danger">Usuń</button>
+      <button id="exportBtn" class="btn ghost">Eksport JSON</button>
+      <label class="btn ghost" for="importFile">Import JSON</label>
+      <input id="importFile" type="file" accept="application/json" style="display:none">
+    </div>
+    <div class="sp"></div>
+    <div class="row">
+      <button id="fullscreenBtn" class="btn">Pełny ekran</button>
+      <span class="badge" id="statusBadge">Gotowe</span>
     </div>
   </div>
 
-  <!-- Panel własnych dźwięków -->
-  <div id="customPanel" class="menu-card" style="display:none;position:fixed;inset:10% 5%;z-index:110;overflow:auto">
-    <h3>Własny zestaw</h3>
-    <div class="badge">Dodaj do 12 plików (WAV/MP3/OGG) — wczytane tylko na czas sesji.</div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0 .6rem">
-      <input id="fileInput" type="file" accept="audio/*" multiple>
-      <button id="loadFiles" class="btn">Wczytaj</button>
+  <div id="stage"></div>
+
+  <!-- Panel kontekstowy edycji pada -->
+  <div id="editPanel" class="panel hidden">
+    <div class="section">
+      <span class="label">Pad:</span>
+      <span id="padId" class="badge">—</span>
     </div>
-    <div id="customList" class="menu-grid"></div>
-    <div class="menu-actions">
-      <button id="customExport" class="btn">Eksport mapy (JSON)</button>
-      <button id="customCancel" class="btn">Zamknij</button>
-      <button id="customOk" class="btn">Użyj zestawu</button>
+    <div class="sep"></div>
+    <div class="section">
+      <span class="label">Etykieta</span>
+      <input id="labelInput" type="text" placeholder="np. KICK">
+      <button id="colorBtn" class="btn">Kolor</button>
+      <input id="colorInput" type="color" style="display:none">
+      <button id="soundBtn" class="btn">Dźwięk…</button>
+      <input id="fileInput" type="file" accept="audio/*" style="display:none">
+    </div>
+    <div class="sep"></div>
+    <div class="section">
+      <button id="dupBtn" class="btn">Duplikuj</button>
+      <button id="toFrontBtn" class="btn">Na wierzch</button>
+      <button id="toBackBtn" class="btn">Na spód</button>
+      <button id="deletePadBtn" class="btn danger">Usuń pad</button>
     </div>
   </div>
 </div>
 
-<!-- Firebase (Jam) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "PLACEHOLDER",
-  authDomain: "PLACEHOLDER.firebaseapp.com",
-  databaseURL: "https://PLACEHOLDER-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "PLACEHOLDER",
-  storageBucket: "PLACEHOLDER.appspot.com",
-  messagingSenderId: "PLACEHOLDER",
-  appId: "PLACEHOLDER"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-</script>
+/* ====== Utilsy ====== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const uid = ()=> 'p' + Math.random().toString(36).slice(2,8);
+const STORAGE_KEY = 'MD_LAYOUTS_V2';
+const AUTO_KEY = '__AUTO__';
+const STATUS = $('#statusBadge');
 
-<script>
-/* ==== AUDIO CORE ==== */
-let ctx=null, master=null, volumeNode=null, started=false;
-const vol=document.getElementById('volume');
-function initAudio(){ if(ctx) return;
-  const AC=window.AudioContext||window.webkitAudioContext;
-  ctx=new AC({latencyHint:'interactive'});
-  master=ctx.createGain(); volumeNode=ctx.createGain();
-  master.connect(volumeNode).connect(ctx.destination);
-  volumeNode.gain.value=parseFloat(vol.value);
-  const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02);
-}
-async function ensureRunning(){
-  if(!ctx) initAudio();
-  if(ctx.state==='suspended' || ctx.state==='interrupted'){ try{ await ctx.resume(); }catch{} }
-}
-async function startAudio(){
-  initAudio(); await ensureRunning();
-  started=true; tapStart.style.display='none';
-}
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureRunning(); });
-window.addEventListener('pageshow', ()=> ensureRunning() );
-
-function envGain(t,g,a=0.001,d=0.2,s=0.0,r=0.2){ g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(1.0,t+a); g.gain.exponentialRampToValueAtTime(Math.max(0.0001,s),t+a+d);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+a+d+r); }
-function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
-const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
-
-/* ==== SYNTHS (skrócone: Standard/Afryka/Australia/Handpan/FunFarts) ==== */
-const now=()=>ctx?ctx.currentTime:0;
-const S={
-  kick(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(50,t+.5);g.gain.setValueAtTime(1,t);g.gain.exponentialRampToValueAtTime(.0001,t+.5);o.connect(g).connect(master);o.start(t);o.stop(t+.6);},
-  kick808(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(70,t);o.frequency.exponentialRampToValueAtTime(38,t+.6);g.gain.setValueAtTime(1,t);g.gain.exponentialRampToValueAtTime(.0001,t+.75);const click=ctx.createBufferSource();click.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=1200;const gc=ctx.createGain();gc.gain.value=.5;gc.gain.exponentialRampToValueAtTime(.0001,t+.03);click.connect(hp).connect(gc).connect(master);click.start(t);click.stop(t+.05);o.connect(g).connect(master);o.start(t);o.stop(t+.8);},
-  snare(t=now()){const o=ctx.createOscillator();o.type='sine';o.frequency.value=180;const gt=ctx.createGain();gt.gain.value=.5;gt.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(gt).connect(master);o.start(t);o.stop(t+.2);const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1800;bp.Q.value=.5;const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=700;const g=ctx.createGain();envGain(t,g,.001,.06,.01,.12);nb.connect(bp).connect(hp).connect(g).connect(master);nb.start(t);nb.stop(t+.25);},
-  hatClosed(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=6000;const g=ctx.createGain();envGain(t,g,.001,.02,.001,.05);nb.connect(hp).connect(g).connect(master);nb.start(t);nb.stop(t+.1);},
-  hatOpen(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=6000;const g=ctx.createGain();envGain(t,g,.001,.08,.05,.5);nb.connect(hp).connect(g).connect(master);nb.start(t);nb.stop(t+.8);},
-  tomHigh(t=now()){const o=ctx.createOscillator();o.type='sine';o.frequency.setValueAtTime(330,t);o.frequency.exponentialRampToValueAtTime(180,t+.32);const g=ctx.createGain();envGain(t,g,.001,.12,.01,.22);o.connect(g).connect(master);o.start(t);o.stop(t+.38);},
-  tomLow(t=now()){const o=ctx.createOscillator();o.type='sine';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(120,t+.35);const g=ctx.createGain();envGain(t,g,.001,.15,.01,.25);o.connect(g).connect(master);o.start(t);o.stop(t+.4);},
-  clap(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1000;bp.Q.value=.6;const g=ctx.createGain();g.gain.value=.0001;g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.0001,t+.02);g.gain.setValueAtTime(.8,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.05);g.gain.setValueAtTime(.7,t+.06);g.gain.exponentialRampToValueAtTime(.0001,t+.12);nb.connect(bp).connect(g).connect(master);nb.start(t);nb.stop(t+.2);},
-  crash(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=4000;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=10000;bp.Q.value=.5;const g=ctx.createGain();envGain(t,g,.001,.12,.2,1.2);nb.connect(hp).connect(bp).connect(g).connect(master);nb.start(t);nb.stop(t+1.5);},
-  ride(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=3000;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=8000;bp.Q.value=.7;const g=ctx.createGain();envGain(t,g,.001,.2,.25,1.6);nb.connect(hp).connect(bp).connect(g).connect(master);nb.start(t);nb.stop(t+1.8);const o=ctx.createOscillator();o.type='sine';o.frequency.value=600;const g2=ctx.createGain();g2.gain.value=.3;g2.gain.exponentialRampToValueAtTime(.0001,t+.12);o.connect(g2).connect(master);o.start(t);o.stop(t+.15);},
-  rim(t=now()){const o=ctx.createOscillator();o.type='square';o.frequency.value=2200;const g=ctx.createGain();envGain(t,g,.001,.03,.001,.05);o.connect(g).connect(master);o.start(t);o.stop(t+.09);},
-  perc(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1200;bp.Q.value=3;const g=ctx.createGain();envGain(t,g,.001,.08,.01,.25);nb.connect(bp).connect(g).connect(master);nb.start(t);nb.stop(t+.35);},
-
-  djembeBass(t=now()){const o=ctx.createOscillator(),g=ctx.createGain(),bp=ctx.createBiquadFilter();o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(70,t+.25);bp.type='bandpass';bp.frequency.value=150;bp.Q.value=1.2;envGain(t,g,.001,.12,.01,.2);o.connect(bp).connect(g).connect(master);o.start(t);o.stop(t+.3);},
-  djembeSlap(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=2500;const g=ctx.createGain();envGain(t,g,.001,.03,.001,.08);nb.connect(hp).connect(g).connect(master);nb.start(t);nb.stop(t+.12);},
-  dundun(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(70,t+.4);envGain(t,g,.001,.18,.02,.3);o.connect(g).connect(master);o.start(t);o.stop(t+.5);},
-  woodblock(t=now()){const o=ctx.createOscillator();o.type='square';o.frequency.value=1400;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=8;const g=ctx.createGain();envGain(t,g,.001,.03,.001,.08);o.connect(bp).connect(g).connect(master);o.start(t);o.stop(t+.1);},
-  clave(t=now()){const o=ctx.createOscillator();o.type='square';o.frequency.value=2000;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2000;bp.Q.value=10;const g=ctx.createGain();envGain(t,g,.001,.02,.001,.06);o.connect(bp).connect(g).connect(master);o.start(t);o.stop(t+.08);},
-  shaker(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=5000;const g=ctx.createGain();envGain(t,g,.001,.05,.02,.08);nb.connect(hp).connect(g).connect(master);nb.start(t);nb.stop(t+.2);},
-
-  clapsticks(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=2200;envGain(t,g,.001,.02,.001,.06);o.connect(g).connect(master);o.start(t);o.stop(t+.08);},
-  didgeridoo(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sawtooth';o.frequency.value=70;const form=ctx.createBiquadFilter();form.type='bandpass';form.frequency.value=200;form.Q.value=6;g.gain.setValueAtTime(.8,t);g.gain.exponentialRampToValueAtTime(.0001,t+1.5);const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.type='sine';lfo.frequency.value=4;lg.gain.value=.3;lfo.connect(lg).connect(g.gain);lfo.start(t);lfo.stop(t+1.5);o.connect(form).connect(g).connect(master);o.start(t);o.stop(t+1.5);},
-
-  handpanNote(freq,t=now()){const o1=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();o1.type='sine';o2.type='sine';o1.frequency.value=freq;o2.frequency.value=freq*2.4;envGain(t,g,.003,.25,.04,.9);o1.connect(g).connect(master);o2.connect(g).connect(master);o1.start(t);o2.start(t);o1.stop(t+1.2);o2.stop(t+1.2);},
-
-  fartShort(t=now()){const o=ctx.createOscillator(),g=ctx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(45,t+.25);const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;envGain(t,g,.001,.18,.01,.2);o.connect(lp).connect(g).connect(master);o.start(t);o.stop(t+.35);},
-  fartLong(t=now()){const nb=ctx.createBufferSource();nb.buffer=sharedNoise();const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(500,t);lp.frequency.exponentialRampToValueAtTime(120,t+1.2);const g=ctx.createGain();envGain(t,g,.01,.6,.15,.6);nb.connect(lp).connect(g).connect(master);nb.start(t);nb.stop(t+1.6);}
-};
-
-/* ==== SHAPES/COLORS & KITS ==== */
-const SHAPE={circle:new Set(['crash','ride','hatClosed','hatOpen','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             hex:new Set(['tomHigh','tomLow','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             tri:new Set(['perc','rim','clapsticks']),
-             drum:new Set(['kick','kick808','djembeBass','djembeSlap','dundun','didgeridoo','fartShort','fartLong']),
-             rect:new Set(['snare','clap','woodblock','clave','shaker'])};
-const COLOR={kick:new Set(['kick','kick808','djembeBass','dundun']),
-             snare:new Set(['snare','clap','clapsticks','woodblock','clave']),
-             hats:new Set(['hatClosed','hatOpen','shaker']),
-             toms:new Set(['tomHigh','tomLow']),
-             cym:new Set(['crash','ride']),
-             hand:new Set(['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             fun:new Set(['fartShort','fartLong','perc','rim'])};
-function shapeClass(id){if(SHAPE.circle.has(id))return'shape-circle';if(SHAPE.hex.has(id))return'shape-hex';if(SHAPE.tri.has(id))return'shape-tri';if(SHAPE.drum.has(id))return'shape-drum';return'shape-rect';}
-function colorClass(id){if(COLOR.kick.has(id))return'c-kick';if(COLOR.snare.has(id))return'c-snare';if(COLOR.hats.has(id))return'c-hats';if(COLOR.toms.has(id))return'c-toms';if(COLOR.cym.has(id))return'c-cym';if(COLOR.hand.has(id))return'c-hand';if(COLOR.fun.has(id))return'c-fun';return'';}
-
-const KITS={
-  "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
-  "Afryka":   ['djembeBass','djembeSlap','dundun','woodblock','clave','shaker','tomLow','tomHigh','crash','ride','rim','perc'],
-  "Australia":['didgeridoo','clapsticks','tomLow','tomHigh','rim','perc','crash','ride','snare','clap','kick','kick808'],
-  "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
-  "FunFarts": ['fartShort','fartLong','clap','rim','perc','woodblock','clave','shaker','tomLow','tomHigh','crash','ride'],
-};
-const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
-
-function trigger(id){
-  if(!ctx) initAudio();
-  if(!started || (ctx && (ctx.state==='suspended' || ctx.state==='interrupted'))) { startAudio(); }
-  if(id in HAND) return S.handpanNote(HAND[id]);
-  return S[id]?.();
+function setStatus(msg, ok=true){
+  STATUS.textContent = msg;
+  STATUS.style.background = ok ? '#0f2a1b' : '#2a0f0f';
+  STATUS.style.borderColor = ok ? '#1f5a3f' : '#7a2f2f';
 }
 
-/* ==== Scena / Układ ==== */
-const stage=document.getElementById('stage');
-let currentKit=localStorage.getItem('kitName')||'Standard';
-let layoutMode=false;
-const positionsKey=()=> 'padPositions:'+currentKit;
-let draftPositions=null;
-const layoutBar=document.getElementById('layoutBar');
-const layoutSave=document.getElementById('layoutSave');
-const layoutCancel=document.getElementById('layoutCancel');
-
-function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
-function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
-
-function renderPads(){
-  stage.className=layoutMode?'canvas':'grid';
-  stage.innerHTML='';
-  const P = layoutMode ? (draftPositions||{}) : getSavedPositions();
-  const pads=(KITS[currentKit]||[]).slice(0,12);
-  pads.forEach((id,idx)=>{
-    const el=document.createElement('div');
-    el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
-    el.dataset.sound=id; el.textContent=id.toUpperCase();
-    if(layoutMode){
-      el.style.width='30vw'; el.style.height='18vh';
-      const pos=P[id]||{left:(idx%3)*32+2, top:Math.floor(idx/3)*20+2};
-      el.style.left=pos.left+'%'; el.style.top=pos.top+'%';
-      makeDraggable(el);
+/* ====== Audio Engine ====== */
+class AudioEngine{
+  constructor(){
+    this.ctx = null;
+    this.buffers = new Map(); // id -> AudioBuffer
+    this.pendingDecode = new Map(); // id -> Promise
+  }
+  ensure(){
+    if(!this.ctx){
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
+  }
+  async playBuffer(buf, vol=1.0){
+    this.ensure();
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const g = this.ctx.createGain();
+    g.gain.value = vol;
+    src.connect(g).connect(this.ctx.destination);
+    src.start();
+  }
+  async playFallbackClick(){
+    this.ensure();
+    // krótki klik generowany syntetycznie
+    const sr = this.ctx.sampleRate;
+    const len = Math.floor(sr * 0.06);
+    const buf = this.ctx.createBuffer(1, len, sr);
+    const ch = buf.getChannelData(0);
+    for(let i=0;i<len;i++){
+      const t = i/sr;
+      const env = Math.exp(-40*t);
+      ch[i] = (Math.random()*2-1)*0.4*env;
+    }
+    this.playBuffer(buf, 0.8);
+  }
+  async decodeAndCache(id, arrayBuf){
+    this.ensure();
+    if(this.pendingDecode.has(id)) return this.pendingDecode.get(id);
+    const p = this.ctx.decodeAudioData(arrayBuf.slice(0)).then(buf=>{
+      this.buffers.set(id, buf);
+      this.pendingDecode.delete(id);
+      return buf;
+    }).catch(e=>{
+      this.pendingDecode.delete(id);
+      throw e;
+    });
+    this.pendingDecode.set(id,p);
+    return p;
+  }
+  async playPad(pad){
+    try{
+      if(pad.sound && pad.sound.type==='buffer' && this.buffers.has(pad.id)){
+        return this.playBuffer(this.buffers.get(pad.id), pad.volume ?? 1.0);
+      }
+      if(pad.sound && pad.sound.type==='dataurl'){
+        // zdekoduj i zapamiętaj
+        const arr = await (await fetch(pad.sound.src)).arrayBuffer();
+        const buf = await this.decodeAndCache(pad.id, arr);
+        return this.playBuffer(buf, pad.volume ?? 1.0);
+      }
+      if(pad.sound && pad.sound.type==='url'){
+        const resp = await fetch(pad.sound.src);
+        const arr = await resp.arrayBuffer();
+        const buf = await this.decodeAndCache(pad.id, arr);
+        return this.playBuffer(buf, pad.volume ?? 1.0);
+      }
+      // brak dźwięku → klik
+      await this.playFallbackClick();
+    }catch(err){
+      console.warn('Audio error:', err);
+      setStatus('Błąd dźwięku (klik jako fallback)', false);
+      this.playFallbackClick();
+    }
+  }
+}
+const audio = new AudioEngine();
+
+/* ====== Layout Store ====== */
+const Store = {
+  all(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }catch{ return {}; } },
+  saveAll(obj){ localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); },
+  list(){ return Object.keys(this.all()).sort((a,b)=> a===AUTO_KEY? -1 : b===AUTO_KEY? 1 : a.localeCompare(b)); },
+  get(name){ return this.all()[name] || null; },
+  set(name, data){
+    const all = this.all(); all[name]=data; this.saveAll(all);
+  },
+  del(name){
+    const all = this.all(); delete all[name]; this.saveAll(all);
+  }
+};
+
+/* ====== Stage / Pads ====== */
+const stage = $('#stage');
+let MODE = 'play'; // 'play' | 'edit'
+let pads = [];
+let activePadId = null;
+let dragState = null;
+let currentLayoutName = AUTO_KEY;
+
+function createPad(partial={}){
+  const p = Object.assign({
+    id: uid(),
+    label: 'PAD',
+    x: 40, y: 60, w: 140, h: 140, rot: 0,
+    color: '#3b82f6',
+    sound: null, // {type:'dataurl'|'url'|'buffer', src:'...'}
+    volume: 1.0,
+    z: Date.now()
+  }, partial);
+  pads.push(p);
+  mountPad(p);
+  return p;
+}
+
+function mountPad(p){
+  let el = document.getElementById(p.id);
+  if(!el){
+    el = document.createElement('div');
+    el.id = p.id;
+    el.className='pad';
+    el.innerHTML = `
+      <div class="label"></div>
+      <div class="handles">
+        <div class="handle h-nw" data-act="scale" data-corner="nw"></div>
+        <div class="handle h-ne" data-act="scale" data-corner="ne"></div>
+        <div class="handle h-sw" data-act="scale" data-corner="sw"></div>
+        <div class="handle h-se" data-act="scale" data-corner="se"></div>
+        <div class="handle h-rot" data-act="rotate" title="Obrót"></div>
+      </div>
+    `;
     stage.appendChild(el);
-  });
-  layoutBar.style.display = layoutMode ? 'flex' : 'none';
-}
-function enterLayout(){
-  layoutMode=true;
-  draftPositions = structuredClone(getSavedPositions());
-  renderPads();
-}
-function exitLayout(save){
-  if(save){ setSavedPositions(draftPositions); }
-  layoutMode=false; draftPositions=null; renderPads();
-}
-layoutSave.onclick = ()=> exitLayout(true);
-layoutCancel.onclick = ()=> exitLayout(false);
 
-function padDown(el){
-  if(layoutMode) return;
-  trigger(el.dataset.sound);
-  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),120);
-  jamEmit(el.dataset.sound);
-}
-stage.addEventListener('pointerdown',(e)=>{ const el=e.target.closest('.pad'); if(!el) return; e.preventDefault(); padDown(el);},{passive:false});
-stage.addEventListener('touchstart',(e)=>{ const el=e.target.closest('.pad'); if(!el) return; padDown(el);},{passive:true});
-
-function makeDraggable(el){
-  let sx=0,sy=0,sl=0,st=0,drag=false;
-  const down=(ev)=>{ drag=true; el.classList.add('dragging');
-    const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
-    sl=((P.left-R.left)/R.width)*100; st=((P.top-R.top)/R.height)*100;
-    sx=ev.clientX||(ev.touches&&ev.touches[0].clientX); sy=ev.clientY||(ev.touches&&ev.touches[0].clientY);
-    addEventListener('pointermove',move); addEventListener('pointerup',up);
-    addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up); };
-  const move=(ev)=>{ if(!drag) return; ev.preventDefault?.();
-    const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
-    const R=stage.getBoundingClientRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
-    const L=Math.min(95,Math.max(0,sl+dx)), T=Math.min(95,Math.max(0,st+dy)); el.style.left=L+'%'; el.style.top=T+'%'; };
-  const up=()=>{ drag=false; el.classList.remove('dragging');
-    removeEventListener('pointermove',move); removeEventListener('pointerup',up);
-    removeEventListener('touchmove',move); removeEventListener('touchend',up);
-    if(!draftPositions) draftPositions={};
-    draftPositions[el.dataset.sound]={left:parseFloat(el.style.left), top:parseFloat(el.style.top)};
-  };
-  el.addEventListener('pointerdown',down); el.addEventListener('touchstart',down,{passive:true});
+    // interakcje
+    el.addEventListener('pointerdown', e=>{
+      if(MODE==='edit'){
+        selectPad(p.id);
+        const target = e.target;
+        if(target.classList.contains('handle')){
+          const act = target.dataset.act;
+          startTransform(e, p.id, act, target.dataset.corner || null);
+        }else{
+          startTransform(e, p.id, 'move', null);
+        }
+      }else{
+        triggerPad(p.id);
+      }
+    });
+  }
+  renderPad(p);
 }
 
-/* ==== MENU / HAMBURGER ==== */
-const menuBtn=document.getElementById('menuBtn');
-const hambit=document.getElementById('hambit');
-const menuPanel=document.getElementById('menuPanel');
-const menuOk=document.getElementById('menuOk');
-const menuCancel=document.getElementById('menuCancel');
-const kitSelect=document.getElementById('kitSelect');
-const layoutStart=document.getElementById('layoutStart');
-const sizeEl=document.getElementById('size');
-const themeBtn=document.getElementById('themeBtn');
-const bpmEl=document.getElementById('bpm'); const bpmVal=document.getElementById('bpmVal');
+function renderPad(p){
+  const el = document.getElementById(p.id);
+  if(!el) return;
+  el.style.left = p.x+'px';
+  el.style.top = p.y+'px';
+  el.style.width = p.w+'px';
+  el.style.height = p.h+'px';
+  el.style.transform = `rotate(${p.rot}deg)`;
+  el.style.background = `linear-gradient(180deg, ${shade(p.color,20)} 0%, ${shade(p.color,-10)} 100%)`;
+  el.style.zIndex = (p.z||1)+'';
 
-function fillKits(){
-  kitSelect.innerHTML='';
-  Object.keys(KITS).forEach(k=>{
-    const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o);
-  });
+  const lab = el.querySelector('.label');
+  lab.textContent = p.label || 'PAD';
+  el.classList.toggle('selected', activePadId===p.id && MODE==='edit');
+  el.querySelector('.handles').style.pointerEvents = MODE==='edit' ? 'auto':'none';
 }
-function openMenu(){ fillKits(); menuPanel.style.display='block'; menuPanel.setAttribute('aria-hidden','false'); document.body.classList.remove('chrome-hidden'); }
-function closeMenu(){ menuPanel.style.display='none'; menuPanel.setAttribute('aria-hidden','true'); }
-function hideChrome(){ document.body.classList.add('chrome-hidden'); }
-menuBtn.onclick = openMenu;
-hambit.onclick = openMenu;
-menuCancel.onclick = ()=>{ closeMenu(); hideChrome(); };
-menuOk.onclick = ()=>{
-  const chosen = kitSelect.value;
-  if(chosen && chosen!==currentKit){ currentKit=chosen; localStorage.setItem('kitName', currentKit); renderPads(); }
-  closeMenu(); hideChrome();
-};
-layoutStart.onclick = ()=>{ closeMenu(); enterLayout(); };
 
-/* Neon */
-function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); themeBtn.textContent = 'Neon: ' + (t==='neon'?'ON':'OFF'); }
-let theme = localStorage.getItem('theme') || 'dark';
-applyTheme(theme);
-themeBtn.onclick = ()=>{ theme = (theme==='neon'?'dark':'neon'); localStorage.setItem('theme', theme); applyTheme(theme); };
+function shade(hex, amt){
+  // proste rozjaśnianie/przyciemnianie
+  try{
+    const c = hex.replace('#','');
+    const num = parseInt(c.length===3 ? c.split('').map(ch=>ch+ch).join('') : c,16);
+    let r=(num>>16)+amt*2, g=((num>>8)&0xff)+amt*2, b=(num&0xff)+amt*2;
+    r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255);
+    return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+  }catch{ return hex; }
+}
 
-/* Rozmiar */
-sizeEl.addEventListener('input',(e)=>{
-  const v = Number(e.target.value); const scale = v/100;
-  document.documentElement.style.setProperty('--size-min',  Math.round(84*scale)+'px');
-  document.documentElement.style.setProperty('--size-vw',   (28*scale)+'vw');
-  document.documentElement.style.setProperty('--size-max',  Math.round(160*scale)+'px');
+function selectPad(id){
+  activePadId = id;
+  $$('.pad').forEach(el=>el.classList.toggle('selected', el.id===id));
+  updateEditPanel();
+}
+function getPad(id){ return pads.find(p=>p.id===id); }
+
+async function triggerPad(id){
+  const p = getPad(id);
+  if(!p) return;
+  const el = document.getElementById(id);
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 80);
+  await audio.playPad(p);
+}
+
+/* ====== Transformacje (przesuwanie / skalowanie / obrót) ====== */
+function stageRect(){ return stage.getBoundingClientRect(); }
+
+function startTransform(e, id, action, corner){
+  e.preventDefault();
+  const p = getPad(id);
+  if(!p) return;
+  const r = stageRect();
+  const startX = e.clientX, startY = e.clientY;
+  const start = { x: p.x, y: p.y, w:p.w, h:p.h, rot:p.rot };
+  dragState = { id, action, corner, startX, startY, start, ox: (p.x+p.w/2), oy:(p.y+p.h/2) };
+  stage.setPointerCapture(e.pointerId);
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragEnd, {once:true});
+}
+
+function onDragMove(e){
+  if(!dragState) return;
+  const p = getPad(dragState.id); if(!p) return;
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+  if(dragState.action==='move'){
+    p.x = clamp(dragState.start.x + dx, 0, stage.clientWidth - p.w);
+    p.y = clamp(dragState.start.y + dy, 0, stage.clientHeight - p.h);
+  }else if(dragState.action==='scale'){
+    let sx=0, sy=0;
+    const corner = dragState.corner;
+    // skalowanie bez utrzymania proporcji (celowo – do perkusji bywa wygodne)
+    if(corner==='se'){ p.w = clamp(dragState.start.w + dx, 60, 600); p.h = clamp(dragState.start.h + dy, 60, 600); }
+    if(corner==='ne'){ p.w = clamp(dragState.start.w + dx, 60, 600); p.y = clamp(dragState.start.y + dy, 0, dragState.start.y+dragState.start.h-60); p.h = dragState.start.h - (p.y - dragState.start.y); }
+    if(corner==='sw'){ p.x = clamp(dragState.start.x + dx, 0, dragState.start.x+dragState.start.w-60); p.w = dragState.start.w - (p.x - dragState.start.x); p.h = clamp(dragState.start.h + dy, 60, 600); }
+    if(corner==='nw'){ p.x = clamp(dragState.start.x + dx, 0, dragState.start.x+dragState.start.w-60); p.y = clamp(dragState.start.y + dy, 0, dragState.start.y+dragState.start.h-60); p.w = dragState.start.w - (p.x - dragState.start.x); p.h = dragState.start.h - (p.y - dragState.start.y); }
+  }else if(dragState.action==='rotate'){
+    const cx = p.x + p.w/2, cy = p.y + p.h/2;
+    const ang = Math.atan2((e.clientY - (stageRect().top+cy)), (e.clientX - (stageRect().left+cx)));
+    p.rot = Math.round((ang*180/Math.PI + 90)); // 0° = w górę
+  }
+  renderPad(p);
+}
+function onDragEnd(e){
+  if(!dragState) return;
+  stage.releasePointerCapture(e.pointerId);
+  window.removeEventListener('pointermove', onDragMove);
+  // auto-save szkic
+  persistAuto();
+  dragState = null;
+}
+
+/* ====== Edycja – panel i akcje ====== */
+const editPanel = $('#editPanel');
+const padIdBadge = $('#padId');
+const labelInput = $('#labelInput');
+const colorBtn = $('#colorBtn');
+const colorInput = $('#colorInput');
+const soundBtn = $('#soundBtn');
+const fileInput = $('#fileInput');
+const dupBtn = $('#dupBtn');
+const toFrontBtn = $('#toFrontBtn');
+const toBackBtn = $('#toBackBtn');
+const deletePadBtn = $('#deletePadBtn');
+
+function updateEditPanel(){
+  const p = getPad(activePadId);
+  if(MODE!=='edit' || !p){ editPanel.classList.add('hidden'); return; }
+  editPanel.classList.remove('hidden');
+  padIdBadge.textContent = p.label || p.id;
+  labelInput.value = p.label || '';
+}
+
+labelInput.addEventListener('input', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  p.label = labelInput.value.trim().slice(0,24) || 'PAD';
+  renderPad(p); persistAuto();
 });
 
-/* Głośność */
-vol.addEventListener('input',()=>{ if(volumeNode) volumeNode.gain.value=parseFloat(vol.value); });
+colorBtn.addEventListener('click', ()=> colorInput.click());
+colorInput.addEventListener('input', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  p.color = colorInput.value;
+  renderPad(p); persistAuto();
+});
 
-/* Start overlay */
-const tapStart=document.getElementById('tapStart');
-const tapStartBtn=document.getElementById('tapStartBtn');
-['click','touchstart'].forEach(ev=> tapStartBtn.addEventListener(ev,()=>startAudio(),{passive:true}) );
+soundBtn.addEventListener('click', async ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  const what = await chooseSound();
+  if(!what) return;
+  p.sound = what;
+  // wyczyść bufor dekodowany dla tego pada (jeśli był)
+  audio.buffers.delete(p.id);
+  persistAuto();
+  setStatus('Dźwięk przypisany');
+});
 
-/* ==== METRONOM (lokalny + Jam sync) ==== */
-const metroBtn=document.getElementById('metroBtn');
-let metroTimer = null, metroRunning = false, metroBpm = parseInt(bpmEl.value,10), metroStartAt = 0;
-function metroClick(t = ctx?.currentTime || 0){
-  if(!ctx) initAudio();
-  const nb = ctx.createBufferSource(); nb.buffer = sharedNoise();
-  const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=4000;
-  const g  = ctx.createGain(); g.gain.value=0.0001;
-  g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-  nb.connect(hp).connect(g).connect(master); nb.start(t); nb.stop(t+0.08);
+function chooseSound(){
+  return new Promise((resolve)=>{
+    // mały popup: wybór pliku lub URL
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style,{position:'fixed',inset:'0',background:'#0008',display:'grid',placeItems:'center',zIndex:2000});
+    wrap.innerHTML = `
+      <div style="background:#10151f;border:1px solid #2a3446;border-radius:12px; padding:16px; max-width:92vw; width:420px">
+        <div style="font-weight:700;margin-bottom:8px">Wybierz źródło dźwięku</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <button id="pickFile" class="btn">Plik audio…</button>
+          <button id="pickUrl" class="btn ghost">Wklej URL</button>
+          <button id="cancelPick" class="btn danger" style="margin-left:auto">Anuluj</button>
+        </div>
+        <div class="label" style="opacity:.8">Plik zostanie zapisany w układzie (localStorage). URL pozostanie linkiem (wymaga dostępu do sieci).</div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    wrap.querySelector('#cancelPick').onclick = ()=>{ cleanup(); resolve(null); };
+    wrap.querySelector('#pickFile').onclick = ()=>{
+      fileInput.onchange = async ()=>{
+        const f = fileInput.files[0];
+        if(!f){ cleanup(); resolve(null); return; }
+        const b64 = await fileToDataURL(f);
+        cleanup(); resolve({type:'dataurl', src:b64, name:f.name});
+      };
+      fileInput.click();
+    };
+    wrap.querySelector('#pickUrl').onclick = async ()=>{
+      const url = prompt('Wklej URL do pliku audio (mp3/wav/ogg):');
+      if(!url){ cleanup(); resolve(null); return; }
+      cleanup(); resolve({type:'url', src:url});
+    };
+    function cleanup(){ document.body.removeChild(wrap); }
+  });
 }
-function startMetronomeSync(bpm, startAtMs){
-  metroBpm = bpm; metroStartAt = startAtMs; stopMetronome();
-  metroRunning = true; metroBtn.textContent = 'Metro: ON'; bpmVal.textContent = String(metroBpm);
-  const beatMs = 60000 / metroBpm;
-  const loop = ()=>{
-    if(!metroRunning) return;
-    const nowMs = (performance.timing?.navigationStart||0) + performance.now();
-    const beats = (nowMs - metroStartAt) / beatMs;
-    const nextBeatIndex = Math.ceil(beats);
-    const nextBeatTimeMs = metroStartAt + nextBeatIndex * beatMs;
-    const delayMs = Math.max(0, nextBeatTimeMs - nowMs);
-    if(ctx){ ensureRunning().then(()=>{ const when = ctx.currentTime + (delayMs/1000); metroClick(when); }); }
-    metroTimer = setTimeout(loop, Math.max(30, delayMs * 0.25));
+function fileToDataURL(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=> res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+dupBtn.addEventListener('click', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  const cp = JSON.parse(JSON.stringify(p));
+  cp.id = uid();
+  cp.x += 24; cp.y += 24; cp.z = Date.now();
+  pads.push(cp);
+  mountPad(cp); selectPad(cp.id); persistAuto();
+});
+toFrontBtn.addEventListener('click', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  p.z = Date.now(); renderPad(p); persistAuto();
+});
+toBackBtn.addEventListener('click', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  p.z = 1; renderPad(p); persistAuto();
+});
+deletePadBtn.addEventListener('click', ()=>{
+  const p = getPad(activePadId); if(!p) return;
+  if(!confirm(`Usunąć pad "${p.label}"?`)) return;
+  const el = document.getElementById(p.id);
+  if(el) el.remove();
+  pads = pads.filter(x=>x.id!==p.id);
+  activePadId=null; updateEditPanel(); persistAuto();
+});
+
+/* ====== Tryby ====== */
+const modePlayBtn = $('#modePlay');
+const modeEditBtn = $('#modeEdit');
+
+function setMode(m){
+  MODE = m;
+  modePlayBtn.classList.toggle('good', m==='play');
+  modeEditBtn.classList.toggle('good', m==='edit');
+  $$('.pad').forEach(el=>{
+    el.classList.toggle('selected', MODE==='edit' && el.id===activePadId);
+  });
+  editPanel.classList.toggle('hidden', MODE!=='edit' || !activePadId);
+  setStatus(MODE==='edit' ? 'Tryb edycji' : 'Tryb odtwarzania');
+}
+modePlayBtn.addEventListener('click', ()=> setMode('play'));
+modeEditBtn.addEventListener('click', ()=> setMode('edit'));
+
+/* ====== Układy (zapisywanie/ładowanie) ====== */
+const layoutSelect = $('#layoutSelect');
+const saveBtn = $('#saveBtn');
+const saveAsBtn = $('#saveAsBtn');
+const deleteBtn = $('#deleteBtn');
+const exportBtn = $('#exportBtn');
+const importFile = $('#importFile');
+
+function refreshLayoutSelect(){
+  const names = Store.list();
+  layoutSelect.innerHTML = '';
+  for(const n of names){
+    const opt = document.createElement('option');
+    opt.value = n;
+    opt.textContent = (n===AUTO_KEY? 'Bieżący (auto)': n);
+    layoutSelect.appendChild(opt);
+  }
+  layoutSelect.value = currentLayoutName;
+}
+layoutSelect.addEventListener('change', ()=>{
+  const name = layoutSelect.value;
+  loadLayout(name);
+});
+
+function serialize(){
+  return {
+    version:2,
+    name: currentLayoutName,
+    pads: pads.map(p=>({
+      id:p.id,label:p.label,x:p.x,y:p.y,w:p.w,h:p.h,rot:p.rot,color:p.color,volume:p.volume,z:p.z,
+      sound:p.sound ? {type:p.sound.type, src:p.sound.src, name:p.sound.name||null} : null
+    })),
+    w: stage.clientWidth, h: stage.clientHeight,
+    savedAt: Date.now()
   };
-  loop();
 }
-function stopMetronome(){ metroRunning = false; metroBtn.textContent = 'Metro: OFF'; if(metroTimer){ clearTimeout(metroTimer); metroTimer=null; } }
-bpmEl.addEventListener('input',(e)=>{
-  metroBpm = parseInt(e.target.value,10)||100; bpmVal.textContent = String(metroBpm);
-  if(metroRunning){
-    const startAt = Date.now() + 600;
-    startMetronomeSync(metroBpm, startAt);
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:true, bpm: metroBpm, startAt, by: clientId });
+function hydrate(data){
+  // wyczyść
+  stage.innerHTML='';
+  pads = [];
+  (data.pads||[]).forEach(p=>{ pads.push(p); mountPad(p); });
+  activePadId = pads[0]?.id || null;
+  updateEditPanel();
+  // załaduj bufory audio dźwięków zapisanych jako dataurl (leniwie – przy pierwszym odtworzeniu)
+}
+
+function persistAuto(){
+  const snap = serialize();
+  snap.name = AUTO_KEY;
+  Store.set(AUTO_KEY, snap);
+  if(currentLayoutName===AUTO_KEY){
+    refreshLayoutSelect();
+  }
+}
+function saveLayout(asName=null){
+  const name = asName || (currentLayoutName===AUTO_KEY ? prompt('Nazwa układu:','Zestaw_'+new Date().toLocaleTimeString('pl-PL').replace(/[: ]/g,'_')) : currentLayoutName);
+  if(!name) return;
+  const snap = serialize(); snap.name = name;
+  Store.set(name, snap);
+  currentLayoutName = name;
+  refreshLayoutSelect();
+  setStatus(`Zapisano: ${name}`);
+}
+function loadLayout(name){
+  const data = Store.get(name);
+  if(!data){ setStatus('Brak układu', false); return; }
+  currentLayoutName = name;
+  hydrate(data);
+  refreshLayoutSelect();
+  setStatus(`Załadowano: ${name}`);
+}
+function deleteLayout(){
+  if(currentLayoutName===AUTO_KEY){ alert('Nie można usuwać układu automatycznego.'); return; }
+  if(!confirm(`Usunąć układ "${currentLayoutName}"?`)) return;
+  Store.del(currentLayoutName);
+  currentLayoutName = AUTO_KEY;
+  refreshLayoutSelect();
+  loadLayout(AUTO_KEY);
+}
+
+saveBtn.addEventListener('click', ()=> saveLayout(null));
+saveAsBtn.addEventListener('click', ()=> saveLayout('__ASK__'));
+deleteBtn.addEventListener('click', ()=> deleteLayout());
+exportBtn.addEventListener('click', ()=>{
+  const data = serialize();
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (data.name||'uklad')+'.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+importFile.addEventListener('change', async ()=>{
+  const f = importFile.files[0]; if(!f) return;
+  const text = await f.text();
+  try{
+    const obj = JSON.parse(text);
+    const name = prompt('Nazwa dla importu:', obj.name || 'Import_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-'));
+    if(!name) return;
+    obj.name = name;
+    Store.set(name, obj);
+    currentLayoutName = name;
+    refreshLayoutSelect();
+    loadLayout(name);
+    setStatus('Zaimportowano układ');
+  }catch(e){
+    alert('Nieprawidłowy plik JSON'); setStatus('Błąd importu', false);
+  }finally{
+    importFile.value='';
   }
 });
-metroBtn.addEventListener('click', ()=>{
-  if(!metroRunning){
-    const startAt = Date.now() + 600;
-    startMetronomeSync(metroBpm, startAt);
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:true, bpm: metroBpm, startAt, by: clientId });
-  }else{
-    stopMetronome();
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:false, by: clientId });
-  }
-});
 
-/* ==== JAM ==== */
-const jamBtn=document.getElementById('jamBtn');
-const jamInfo=document.getElementById('jamInfo');
-const jamRoomLabel=document.getElementById('jamRoomLabel');
-let jamOn=false, roomId=null, clientId=(crypto.getRandomValues(new Uint32Array(1))[0]).toString(16);
-let roomRef=null, eventsRef=null, eventsListener=null;
-function setJamUI(){ jamBtn.textContent='Jam: '+(jamOn?'ON':'OFF'); jamInfo.style.display=jamOn?'block':'none'; jamRoomLabel.textContent=roomId||'—';}
-function promptRoom(){ const code=prompt('Kod pokoju (np. ABC123):',(roomId||'JAM001')); return code?.replace(/[^A-Za-z0-9_-]/g,'').slice(0,24)||null; }
-function jamEmit(padId){ if(!jamOn||!roomId) return; eventsRef.push({pad:padId,kit:currentKit,clientId,ts:Date.now()}).catch(()=>{}); }
-async function jamEnable(){
-  const code=promptRoom(); if(!code) return; roomId=code;
-  roomRef=firebase.database().ref('rooms/'+roomId); eventsRef=roomRef.child('events');
-  const pr=roomRef.child('presence').child(clientId); pr.set({ts:firebase.database.ServerValue.TIMESTAMP}); pr.onDisconnect().remove();
-  if(eventsListener) eventsRef.off('child_added',eventsListener);
-  eventsListener=eventsRef.limitToLast(64).on('child_added',(snap)=>{
-    const ev=snap.val(); if(!ev||ev.clientId===clientId) return;
-    if(Date.now()-(ev.ts||0)>5000){ snap.ref.remove(); return; }
-    if(ev.kit && ev.kit!==currentKit) return;
-    trigger(ev.pad);
-    const pad=[...stage.querySelectorAll('.pad')].find(p=>p.dataset.sound===ev.pad);
-    if(pad){ pad.classList.add('active'); setTimeout(()=>pad.classList.remove('active'),120); }
-  });
-  const metroRef = roomRef.child('metro');
-  metroRef.on('value',(snap)=>{
-    const v=snap.val(); if(!v) return;
-    if(v.running){
-      if(metroRunning && v.bpm===metroBpm && Math.abs(metroStartAt - v.startAt)<5) return;
-      startMetronomeSync(v.bpm, v.startAt); bpmEl.value = v.bpm; bpmVal.textContent = String(v.bpm);
+/* ====== Fullscreen ====== */
+$('#fullscreenBtn').addEventListener('click', async ()=>{
+  try{
+    if(!document.fullscreenElement){
+      await document.documentElement.requestFullscreen();
     }else{
-      if(metroRunning) stopMetronome();
+      await document.exitFullscreen();
     }
-  });
-  jamOn=true; setJamUI();
-}
-function jamDisable(){
-  jamOn=false; setJamUI();
-  if(eventsListener&&eventsRef) eventsRef.off('child_added',eventsListener);
-  if(roomRef){ roomRef.child('presence').child(clientId).remove(); roomRef.child('metro').off(); }
-  eventsListener=null; roomRef=null; eventsRef=null;
-}
-jamBtn.onclick = ()=>{ if(!jamOn) jamEnable(); else jamDisable(); };
-
-/* ==== CUSTOM (własne dźwięki) ==== */
-const customPanel=document.getElementById('customPanel');
-const fileInput=document.getElementById('fileInput');
-const loadFiles=document.getElementById('loadFiles');
-const customList=document.getElementById('customList');
-const customOk=document.getElementById('customOk');
-const customCancel=document.getElementById('customCancel');
-const customExport=document.getElementById('customExport');
-const customBtn=document.getElementById('customBtn');
-let customBuffers=[];
-
-customBtn.onclick = ()=>{ customPanel.style.display='block'; }
-customCancel.onclick = ()=>{ customPanel.style.display='none'; }
-loadFiles.onclick = async ()=>{
-  if(!fileInput.files.length){ alert('Wybierz pliki audio.'); return; }
-  customBuffers=[]; customList.innerHTML='';
-  for(const f of Array.from(fileInput.files).slice(0,12)){
-    const arr = await f.arrayBuffer();
-    const tmpAC = ctx || new (window.AudioContext||window.webkitAudioContext)();
-    const buf = await tmpAC.decodeAudioData(arr);
-    const item = {name: f.name.replace(/\.[^/.]+$/,''), buffer: buf, shape: 'shape-rect'};
-    customBuffers.push(item);
-    const row=document.createElement('div'); row.className='menu-row';
-    const name=document.createElement('span'); name.textContent=item.name;
-    const sel=document.createElement('select');
-    ['shape-rect','shape-circle','shape-hex','shape-tri','shape-drum'].forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s.replace('shape-',''); sel.appendChild(o); });
-    sel.value=item.shape; sel.onchange=()=> item.shape=sel.value;
-    row.appendChild(name); row.appendChild(sel); customList.appendChild(row);
+  }catch(e){
+    // iOS Safari nie pozwala programowo – podpowiedź
+    alert('Jeśli przeglądarka nie zezwala na fullscreen: na iOS dodaj do ekranu głównego, na Androidzie użyj „Dodaj do ekranu głównego”.');
   }
-};
-customOk.onclick = ()=>{
-  if(customBuffers.length===0){ alert('Brak wczytanych plików.'); return; }
-  customBuffers.forEach((it, i)=>{
-    const id = 'custom'+(i+1);
-    S[id] = (t=now())=>{ const src=ctx.createBufferSource(); src.buffer=it.buffer; const g=ctx.createGain(); g.gain.value=1.0; src.connect(g).connect(master); src.start(t); };
-  });
-  const kitName='Custom';
-  KITS[kitName] = customBuffers.map((_,i)=> 'custom'+(i+1)).slice(0,12);
-  customBuffers.forEach((it,i)=>{
-    const id='custom'+(i+1); Object.values(SHAPE).forEach(set=>set.delete?.(id));
-    const map={ 'shape-rect':'rect','shape-circle':'circle','shape-hex':'hex','shape-tri':'tri','shape-drum':'drum' };
-    const bucket = map[it.shape]; if(bucket) (SHAPE[bucket]||SHAPE.rect).add(id);
-  });
-  currentKit=kitName; localStorage.setItem('kitName', kitName);
-  renderPads(); customPanel.style.display='none';
-};
-customExport.onclick = ()=>{
-  const cfg = customBuffers.map((b,i)=>({id:'custom'+(i+1), name:b.name, shape:b.shape}));
-  const blob = new Blob([JSON.stringify(cfg,null,2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='custom_kit_map.json'; a.click();
-};
+});
 
-/* ==== Start ==== */
-function initialRender(){ renderPads(); tapStart.style.display='flex'; }
-window.addEventListener('load', initialRender);
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && (!ctx||ctx.state!=='running')) tapStart.style.display='flex'; });
+/* ====== Inicjalizacja i predef układu ====== */
+function defaultLayout(){
+  const vw = stage.clientWidth, vh = stage.clientHeight;
+  // 6 padów startowych
+  const S = Math.min(vw, vh);
+  const base = Math.max(100, Math.min(180, Math.floor(S/4)));
+  return [
+    {label:'KICK', x:20, y:vh-base-20, w:base, h:base, color:'#2563eb'},
+    {label:'SNARE', x:40+base, y:vh-base-20, w:base, h:base, color:'#ef4444'},
+    {label:'HH', x:60+2*base, y:vh-base-20, w:base, h:base, color:'#eab308'},
+    {label:'TOM1', x:20, y:20, w:base, h:base, color:'#22c55e'},
+    {label:'TOM2', x:40+base, y:20, w:base, h:base, color:'#a855f7'},
+    {label:'CRASH', x:60+2*base, y:20, w:base, h:base, color:'#06b6d4'},
+  ];
+}
 
-/* PWA SW */
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+function init(){
+  // zablokuj scroll/gesty pinch-zoom
+  document.addEventListener('gesturestart', e=>e.preventDefault());
+  document.addEventListener('gesturechange', e=>e.preventDefault());
+  document.addEventListener('touchmove', e=>{
+    if(!e.target.closest('.pad')) e.preventDefault();
+  }, {passive:false});
+
+  // Wczytaj auto albo stwórz domyślny
+  const auto = Store.get(AUTO_KEY);
+  if(auto && auto.pads && auto.pads.length){
+    hydrate(auto);
+  }else{
+    defaultLayout().forEach(cfg=> createPad(cfg));
+    persistAuto();
+  }
+  currentLayoutName = AUTO_KEY;
+  refreshLayoutSelect();
+  setMode('play');
+
+  // klik pustego obszaru w trybie edycji – dodaje pad
+  stage.addEventListener('dblclick', e=>{
+    if(MODE!=='edit') return;
+    const rect = stageRect();
+    const x = e.clientX - rect.left, y= e.clientY - rect.top;
+    const p = createPad({label:'NEW', x:x-60, y:y-60, w:140, h:140, color:'#64748b'});
+    selectPad(p.id); persistAuto();
+  });
+
+  // Klawiszologia (desktop)
+  window.addEventListener('keydown', e=>{
+    if(MODE==='edit' && activePadId){
+      const p = getPad(activePadId);
+      const step = e.shiftKey ? 10 : 2;
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete'].includes(e.key)) e.preventDefault();
+      if(e.key==='ArrowLeft'){ p.x = clamp(p.x-step,0,stage.clientWidth-p.w); renderPad(p); persistAuto(); }
+      if(e.key==='ArrowRight'){ p.x = clamp(p.x+step,0,stage.clientWidth-p.w); renderPad(p); persistAuto(); }
+      if(e.key==='ArrowUp'){ p.y = clamp(p.y-step,0,stage.clientHeight-p.h); renderPad(p); persistAuto(); }
+      if(e.key==='ArrowDown'){ p.y = clamp(p.y+step,0,stage.clientHeight-p.h); renderPad(p); persistAuto(); }
+      if(e.key==='Delete'){ deletePadBtn.click(); }
+      if(e.key==='r'){ p.rot = (p.rot+15)%360; renderPad(p); persistAuto(); }
+    }
+    // Szybkie przełączanie trybu
+    if(e.key==='e'){ setMode(MODE==='edit'?'play':'edit'); }
+  });
+
+  window.addEventListener('resize', ()=>{
+    // nic nie skalujemy globalnie — zostawiamy użytkownikowi pełną kontrolę
+  });
+}
+
+/* ====== Start ====== */
+init();
 </script>
 </body>
 </html>
-
-
