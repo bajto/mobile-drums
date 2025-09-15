@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Drum Pad</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0b0d10">
 <style>
 :root{
@@ -107,6 +112,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 /* Edit panel */
 #editPanel{position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;
   background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)}
+#editPanel.at-top{top:8px;bottom:auto}
 #editPanel .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .pad.selected{outline:2px solid var(--accent)}
 .handle{position:absolute;width:16px;height:16px;background:#fff;border:2px solid #0007;border-radius:50%;box-shadow:0 2px 6px #0008;touch-action:none}
@@ -196,7 +202,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
     </div>
   </div>
 
-  <!-- Panel edycji pada -->
+  <!-- Panel edycji pada (na żądanie: long-press / dblclick) -->
   <div id="editPanel">
     <div class="row">
       <span class="badge">Pad:</span>
@@ -220,6 +226,9 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
       <input id="inpSoundFile" type="file" accept="audio/*" style="display:none">
       <button id="btnSoundUrl" class="btn">URL…</button>
       <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
+    </div>
+    <div class="row" style="margin-top:.4rem">
+      <button id="btnEPOk" class="btn primary">OK</button>
     </div>
   </div>
 </div>
@@ -262,7 +271,7 @@ const S={
 };
 const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
 
-/* === Kits (bez trójkątów/hex) === */
+/* === Kits === */
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
   "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']
@@ -369,9 +378,20 @@ function renderPads(){
       el.textContent=(cfg.label)||id.toUpperCase();
 
       if(layoutMode){
+        // zaznaczanie + drag/scale/rotate
         el.addEventListener('pointerdown',(e)=>selectPad(el,e));
         addHandles(el);
         makeDraggable(el);
+
+        // WYWOŁANIE PANELU: dblclick lub long-press (~500ms)
+        el.addEventListener('dblclick', ()=>{ selectPad(el); showEditPanel(el); });
+        let lpTimer=null;
+        const lpStart=()=>{ clearTimeout(lpTimer); lpTimer=setTimeout(()=>{ selectPad(el); showEditPanel(el); },500); };
+        const lpCancel=()=>{ clearTimeout(lpTimer); };
+        el.addEventListener('pointerdown', lpStart);
+        el.addEventListener('pointerup', lpCancel);
+        el.addEventListener('pointercancel', lpCancel);
+        el.addEventListener('pointermove', lpCancel);
       }else{
         el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); padDown(el,cfg); },{passive:false});
         el.addEventListener('touchstart',()=> padDown(el,cfg),{passive:true});
@@ -381,7 +401,7 @@ function renderPads(){
   }
 
   layoutBar.style.display = layoutMode ? 'flex' : 'none';
-  document.getElementById('editPanel').style.display = layoutMode ? 'block':'none';
+  document.getElementById('editPanel').style.display = (layoutMode && editPanelVisible)?'block':'none';
   if(!layoutMode) clearSelectionAndHandles();
 }
 
@@ -396,7 +416,7 @@ async function padDown(el,cfg){
   if(sound){
     try{
       if(sound.type==='dataurl' || sound.type==='url'){
-        const resp = await fetch(sound.src); const arr = await resp.arrayBuffer();
+        const resp = await fetch(sound.src, {mode:'cors'}); const arr = await resp.arrayBuffer();
         const buf = await (ctx.decodeAudioData(arr.slice(0)));
         const src = ctx.createBufferSource(); src.buffer = buf; const g=ctx.createGain(); g.gain.value=1.0; src.connect(g).connect(master); src.start();
       }
@@ -414,7 +434,7 @@ const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
 
 function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
-function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; clearSelectionAndHandles(); renderPads(); }
+function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; hideEditPanel(); clearSelectionAndHandles(); renderPads(); }
 layoutSave.onclick = ()=> exitLayout(true);
 layoutCancel.onclick = ()=> exitLayout(false);
 
@@ -496,7 +516,7 @@ function savePadRect(el){
   });
 }
 
-/* Edit panel */
+/* Edit panel — na żądanie */
 const editPanel=document.getElementById('editPanel');
 const epLabel=document.getElementById('epLabel');
 const inpLabel=document.getElementById('inpLabel');
@@ -511,10 +531,27 @@ const btnSoundFile=document.getElementById('btnSoundFile');
 const inpSoundFile=document.getElementById('inpSoundFile');
 const btnSoundUrl=document.getElementById('btnSoundUrl');
 const btnClrSound=document.getElementById('btnClrSound');
+const btnEPOk=document.getElementById('btnEPOk');
+
+let editPanelVisible=false;
+
+function showEditPanel(anchorEl){
+  editPanelVisible = true;
+  editPanel.style.display = 'block';
+  // auto-pozycja (góra/dół) – żeby nie zasłaniać dolnych padów
+  if(anchorEl){
+    const R = stage.getBoundingClientRect();
+    const P = anchorEl.getBoundingClientRect();
+    const padBottomPct = ((P.bottom - R.top) / R.height) * 100;
+    if(padBottomPct > 65){ editPanel.classList.add('at-top'); }
+    else { editPanel.classList.remove('at-top'); }
+  }
+}
+function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
+function toggleEditPanel(anchorEl){ if(editPanelVisible) hideEditPanel(); else showEditPanel(anchorEl); }
 
 function updateEditPanelFromEl(el,live=false){
-  if(!layoutMode || !el){ editPanel.style.display='none'; return; }
-  editPanel.style.display='block';
+  if(!layoutMode || !el){ return; }
   const id = el.dataset.sound;
   epLabel.textContent = id;
   if(!live){
@@ -524,8 +561,17 @@ function updateEditPanelFromEl(el,live=false){
     const c=(el.style.background||'').trim(); if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) inpColor.value=c;
   }
 }
-function currentCfgId(){ return selectedPadEl?.dataset.sound; }
+function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
+  document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el));
+  updateEditPanelFromEl(el); /* nie pokazujemy panelu automatycznie */
+}
+function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
+  document.querySelectorAll('.pad .handle').forEach(h=>h.remove()); hideEditPanel(); selectedPadEl=null; }
 
+btnEPOk.addEventListener('click', ()=> hideEditPanel());
+
+/* Edytowalne właściwości */
+function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   selectedPadEl.textContent = inpLabel.value.trim() || selectedPadEl.dataset.sound.toUpperCase();
@@ -564,7 +610,7 @@ btnDel.addEventListener('click', ()=>{
   selectedPadEl=null;
 });
 
-/* Sound assign */
+/* Przypisywanie dźwięku: Plik/URL/Usuń (zapis w draftPositions[id].sound) */
 btnSoundFile.addEventListener('click', ()=> inpSoundFile.click());
 inpSoundFile.addEventListener('change', async ()=>{
   if(!selectedPadEl || !inpSoundFile.files[0]) return;
@@ -572,31 +618,26 @@ inpSoundFile.addEventListener('change', async ()=>{
   const b64 = await new Promise((res)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(new Blob([data])); });
   applyPadSound({type:'dataurl', src:String(b64)});
   inpSoundFile.value='';
+  alert('Dźwięk z pliku przypisany. Zapisz układ, aby zachować.');
 });
 btnSoundUrl.addEventListener('click', ()=>{
   if(!selectedPadEl) return;
   const url = prompt('Wklej URL do pliku audio:\n(np. https://raw.githubusercontent.com/<user>/<repo>/main/sounds/kick.wav)');
   if(!url) return;
   applyPadSound({type:'url', src:url.trim()});
+  alert('Dźwięk z URL przypisany. Zapisz układ, aby zachować.');
 });
 btnClrSound.addEventListener('click', ()=>{
   const id=currentCfgId(); if(!id||!draftPositions) return;
   if(!draftPositions[id]) draftPositions[id]={};
-  draftPositions[id].sound=null; alert('Usunięto przypisanie dźwięku dla pada '+id+'. Zapisz układ, aby zachować.');
+  draftPositions[id].sound=null; alert('Usunięto przypisanie dźwięku. Zapisz układ, aby zachować.');
 });
 function applyPadSound(obj){
   const id=currentCfgId(); if(!id) return;
   if(!draftPositions) draftPositions={};
   if(!draftPositions[id]) draftPositions[id]={};
   draftPositions[id].sound=obj;
-  alert('Dźwięk przypisany. Zapisz układ, aby zachować.');
 }
-
-/* Select & clear */
-function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
-  document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); updateEditPanelFromEl(el); }
-function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
-  document.querySelectorAll('.pad .handle').forEach(h=>h.remove()); document.getElementById('editPanel').style.display='none'; selectedPadEl=null; }
 
 /* Menu */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
@@ -622,7 +663,10 @@ sizeEl.addEventListener('input',(e)=>{
   document.documentElement.style.setProperty('--size-vw',   (28*scale)+'vw');
   document.documentElement.style.setProperty('--size-max',  Math.round(160*scale)+'px');
 });
-vol.addEventListener('input',()=>{ if(volumeNode) volumeNode.gain.value=parseFloat(vol.value); });
+vol.addEventListener('input',()=>{ if(!volumeNode) return; volumeNode.gain.value=parseFloat(vol.value); });
+
+/* BPM label (góra i w menu zsynchronizowane) */
+bpmEl.addEventListener('input', (e)=> setBpmDisplay(e.target.value) );
 
 /* Start overlay */
 ['click','touchstart'].forEach(ev=> tapStartBtn.addEventListener(ev,()=>startAudio(),{passive:true}) );
@@ -631,6 +675,9 @@ vol.addEventListener('input',()=>{ if(volumeNode) volumeNode.gain.value=parseFlo
 function initialRender(){ applyUseBtn(); renderPads(); tapStart.style.display='flex'; }
 window.addEventListener('load', initialRender);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureRunning(); });
+
+/* Service Worker */
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 </script>
 </body>
 </html>
