@@ -1,5 +1,5 @@
-// sw.js — v5: twarde odświeżenie cache + natychmiastowa aktywacja
-const CACHE = 'drums-cache-v9';
+// sw.js — v6
+const CACHE = 'drums-cache-v10';
 const ASSETS = [
   './',
   './drums.html',
@@ -30,4 +30,3 @@ self.addEventListener('fetch', (e) => {
     }).catch(() => caches.match('./drums.html')))
   );
 });
-
