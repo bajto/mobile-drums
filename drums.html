@@ -14,8 +14,9 @@
 :root{
   --bg:#0b0d10; --text:#e6edf3; --muted:#9aa4ad;
   --pad:#1b1f24; --pad2:#14181d; --pad-active:#2d333b; --accent:#4aa3ff;
-  --topbar-h:52px; --footer-h:36px;
+  --topbar-h:52px;
   --size-min:84px; --size-vw:28vw; --size-max:160px;
+  --btn-bg:#12161b; --btn-br:#2b3138; --btn-glow:rgba(74,163,255,.35);
 }
 *{box-sizing:border-box}
 html,body{
@@ -25,7 +26,7 @@ html,body{
 }
 body, #app{min-height:100svh}
 
-/* Top mini-bar */
+/* Top bar */
 .topbar{
   position:fixed;top:0;left:0;right:0;z-index:90;height:var(--topbar-h);
   display:flex;align-items:center;gap:.6rem;
@@ -33,14 +34,35 @@ body, #app{min-height:100svh}
   background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));
 }
 .title{font-weight:800;letter-spacing:.4px;margin-left:.2rem}
-.iconbtn{
-  appearance:none;cursor:pointer;border:1px solid #2b3138;border-radius:.6rem;
-  background:var(--pad);color:var(--text);padding:.45rem .6rem;display:flex;align-items:center;gap:.4rem
-}
-.icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
-.icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
-.icon::before{top:-6px}.icon::after{top:6px}
 .muted{color:var(--muted);font-size:.9rem}
+.badge{font-size:.85rem;color:var(--muted);padding:.1rem .4rem;border:1px solid var(--btn-br);border-radius:.5rem;background:#0e1116}
+
+/* Przycisk – jeden system dla wszystkich wariantów */
+.btn, select, input[type="text"]{
+  appearance:none;cursor:pointer;font-weight:700;color:var(--text);
+  background:var(--btn-bg);border:1px solid var(--btn-br);border-radius:.6rem;
+  padding:.5rem .8rem;display:inline-flex;align-items:center;gap:.45rem;
+  box-shadow:0 0 0 1px rgba(255,255,255,.02) inset, 0 4px 16px rgba(0,0,0,.32);
+}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent}
+.btn.danger{background:#301919;border-color:#7a2f2f}
+.btn.primary{background:#142231;border-color:#356a92}
+.btn.toggle{position:relative}
+.btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 0 3px rgba(74,163,255,.13)}
+select{cursor:pointer}
+
+/* Neon – identycznie dla wszystkich typów */
+body.theme-neon{
+  --bg:#070910; --text:#e9f6ff; --muted:#9cc7ff;
+  --pad:#0b1020; --pad2:#0a0e1a; --pad-active:#111a33; --accent:#00e5ff;
+  --btn-bg:#0a1121; --btn-br:#123154; --btn-glow:rgba(0,229,255,.45);
+}
+body.theme-neon .btn, body.theme-neon select, body.theme-neon input[type="text"]{
+  box-shadow:0 0 10px var(--btn-glow), 0 8px 24px rgba(0,0,0,.35), inset 0 2px 0 rgba(0,0,0,.55);
+  text-shadow:0 0 6px rgba(0,229,255,.25);
+}
+body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 14px var(--btn-glow), 0 0 0 3px rgba(0,229,255,.15)}
 
 /* Scena */
 #stage{
@@ -87,18 +109,7 @@ body, #app{min-height:100svh}
 .c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%)}
 .c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%)}
 
-/* NEON (bez zmian) */
-body.theme-neon{
-  --bg:#070910; --text:#e9f6ff; --muted:#9cc7ff;
-  --pad:#0b1020; --pad2:#0a0e1a; --pad-active:#111a33; --accent:#00e5ff;
-}
-body.theme-neon .pad{
-  box-shadow:0 0 10px rgba(0,229,255,.25),0 8px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(0,0,0,.55);
-  text-shadow:0 0 6px rgba(0,229,255,.25);
-}
-body.theme-neon .pad.active{outline-color:#00e5ff;box-shadow:0 0 18px rgba(0,229,255,.45),inset 0 10px 28px rgba(0,0,0,.45)}
-
-/* Menu panel (bez zmian) */
+/* Menu panel */
 #menuPanel{
   position:fixed;inset:0;z-index:100;display:none;
   background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);
@@ -110,14 +121,8 @@ body.theme-neon .pad.active{outline-color:#00e5ff;box-shadow:0 0 18px rgba(0,229
   padding:.9rem
 }
 .menu-section{border-top:1px solid #212832;margin-top:.7rem;padding-top:.7rem}
-.menu-grid{display:grid;grid-template-columns:1fr;gap:.45rem}
-.menu-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
-.menu-row .right{display:flex;align-items:center;gap:.5rem}
-input[type="range"]{width:150px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
 .menu-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.7rem}
-.btn{appearance:none;cursor:pointer;font-weight:700;color:var(--text);background:var(--pad);border:1px solid #2b3138;border-radius:.6rem;padding:.5rem .8rem}
-.btn:active{transform:scale(.98)}
-.badge{font-size:.85rem;color:var(--muted)}
 
 /* Pasek Układu */
 #layoutBar{
@@ -125,15 +130,6 @@ input[type="range"]{width:150px}
   bottom:calc(10px + env(safe-area-inset-bottom,0));
   z-index:95;display:none;gap:.5rem
 }
-#layoutBar .btn{background:#1d2630}
-
-/* Info Jam */
-#jamInfo{
-  position:fixed;left:.6rem;top:calc(var(--topbar-h) + .6rem);z-index:85;
-  background:#0e1116;border:1px solid #2b3138;border-radius:.7rem;
-  padding:.3rem .6rem;font-size:.85rem;display:none
-}
-#jamInfo .room{color:#7bdcff}
 
 /* Start overlay */
 #tapStart{
@@ -143,16 +139,25 @@ input[type="range"]{width:150px}
 #tapStart .big{font-size:1.25rem;font-weight:800}
 #tapStart .hint{opacity:.8}
 
+/* Przyciski na pasku */
+.iconbtn{
+  appearance:none;cursor:pointer;border:1px solid var(--btn-br);border-radius:.6rem;
+  background:var(--btn-bg);color:var(--text);padding:.5rem .8rem;display:flex;align-items:center;gap:.4rem
+}
+.icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
+.icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
+.icon::before{top:-6px}.icon::after{top:6px}
+
 /* Chrome hidden */
 body.chrome-hidden .topbar{display:none}
 #hambit{
   position:fixed;z-index:92;top:8px;left:8px;
-  padding:.5rem .6rem;border-radius:.6rem;border:1px solid #2b3138;background:#0d1117;color:var(--text);
+  padding:.5rem .6rem;border-radius:.6rem;border:1px solid var(--btn-br);background:var(--btn-bg);color:var(--text);
   display:none
 }
 body.chrome-hidden #hambit{display:flex}
 
-/* === Panel edycji pada (NOWE, nienachalnie) === */
+/* Panel edycji pada */
 #editPanel{
   position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;
   background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)
@@ -173,27 +178,26 @@ body.chrome-hidden #hambit{display:flex}
     <button id="menuBtn" class="iconbtn" title="Menu"><span class="icon" aria-hidden="true"></span></button>
     <div class="title">Drum Pad</div>
     <div class="muted">dotknij pad, by grać</div>
+    <div style="margin-left:auto" class="badge">BPM: <span id="bpmTopVal">100</span></div>
   </div>
 
   <button id="hambit" class="iconbtn" title="Menu"><span class="icon"></span></button>
 
-  <div id="jamInfo">Jam ON — pokój: <span class="room" id="jamRoomLabel">—</span></div>
-
   <div id="tapStart">
     <div class="big">Dotknij, aby rozpocząć</div>
-    <button id="tapStartBtn" class="btn">Start audio</button>
+    <button id="tapStartBtn" class="btn primary">Start audio</button>
     <div class="hint">iOS wymaga dotknięcia ekranu, by włączyć dźwięk</div>
   </div>
 
   <div id="stage" class="grid"></div>
 
-  <!-- Pasek akcji Układ (Twoje) -->
+  <!-- Pasek akcji Układ -->
   <div id="layoutBar">
-    <button id="layoutSave" class="btn">Zapisz</button>
-    <button id="layoutCancel" class="btn">Anuluj</button>
+    <button id="layoutSave" class="btn primary">Zapisz</button>
+    <button id="layoutCancel" class="btn ghost">Anuluj</button>
   </div>
 
-  <!-- MENU PANEL (Twoje) -->
+  <!-- MENU -->
   <div id="menuPanel" aria-hidden="true">
     <div class="menu-card">
       <div class="menu-section">
@@ -203,67 +207,51 @@ body.chrome-hidden #hambit{display:flex}
       <div class="menu-section">
         <div class="menu-row">
           <div>Zestaw</div>
-          <div class="right">
+          <div>
             <select id="kitSelect" class="btn"></select>
             <button id="customBtn" class="btn">Własne…</button>
           </div>
         </div>
         <div class="menu-row">
           <div>Układ</div>
-          <div class="right">
+          <div>
             <button id="layoutStart" class="btn">START</button>
-            <button id="layoutUseBtn" class="btn">Użyj mojego układu: OFF</button>
+            <button id="layoutUseBtn" class="btn toggle" data-on="0">Użyj mojego układu</button>
           </div>
         </div>
       </div>
 
       <div class="menu-section">
-        <div class="menu-row">
-          <div>Jam</div>
-          <div class="right">
-            <button id="jamBtn" class="btn">Jam: OFF</button>
-          </div>
-        </div>
         <div class="menu-row">
           <div>Metronom</div>
-          <div class="right">
-            <button id="metroBtn" class="btn">Metro: OFF</button>
-            <label class="badge">BPM</label>
+          <div>
+            <button id="metroBtn" class="btn toggle" data-on="0">Metro</button>
+            <label class="badge">BPM: <span id="bpmVal">100</span></label>
             <input id="bpm" type="range" min="40" max="220" step="1" value="100">
-            <span id="bpmVal" class="badge">100</span>
           </div>
         </div>
-      </div>
-
-      <div class="menu-section">
         <div class="menu-row">
           <div>Neon</div>
-          <div class="right">
-            <button id="themeBtn" class="btn">Neon: OFF</button>
-          </div>
+          <div><button id="themeBtn" class="btn toggle" data-on="0">Neon</button></div>
         </div>
         <div class="menu-row">
           <div>Rozmiar padów</div>
-          <div class="right">
-            <input id="size" type="range" min="80" max="130" step="1" value="100">
-          </div>
+          <div><input id="size" type="range" min="80" max="130" step="1" value="100"></div>
         </div>
         <div class="menu-row">
           <div>Głośność</div>
-          <div class="right">
-            <input id="volume" type="range" min="0" max="1" step="0.01" value="0.9">
-          </div>
+          <div><input id="volume" type="range" min="0" max="1" step="0.01" value="0.9"></div>
         </div>
       </div>
 
       <div class="menu-actions">
-        <button id="menuCancel" class="btn">Anuluj</button>
-        <button id="menuOk" class="btn">OK</button>
+        <button id="menuCancel" class="btn ghost">Anuluj</button>
+        <button id="menuOk" class="btn primary">OK</button>
       </div>
     </div>
   </div>
 
-  <!-- Panel własnych dźwięków (Twoje, bez zmian) -->
+  <!-- Panel własnych dźwięków (bez zmian) -->
   <div id="customPanel" class="menu-card" style="display:none;position:fixed;inset:10% 5%;z-index:110;overflow:auto">
     <h3>Własny zestaw</h3>
     <div class="badge">Dodaj do 12 plików (WAV/MP3/OGG) — wczytane tylko na czas sesji.</div>
@@ -271,15 +259,15 @@ body.chrome-hidden #hambit{display:flex}
       <input id="fileInput" type="file" accept="audio/*" multiple>
       <button id="loadFiles" class="btn">Wczytaj</button>
     </div>
-    <div id="customList" class="menu-grid"></div>
+    <div id="customList"></div>
     <div class="menu-actions">
       <button id="customExport" class="btn">Eksport mapy (JSON)</button>
-      <button id="customCancel" class="btn">Zamknij</button>
-      <button id="customOk" class="btn">Użyj zestawu</button>
+      <button id="customCancel" class="btn ghost">Zamknij</button>
+      <button id="customOk" class="btn primary">Użyj zestawu</button>
     </div>
   </div>
 
-  <!-- Panel edycji pojawia się tylko w trybie Układ -->
+  <!-- Panel edycji pada -->
   <div id="editPanel">
     <div class="row">
       <span class="badge">Pad:</span>
@@ -290,40 +278,13 @@ body.chrome-hidden #hambit{display:flex}
       <button id="btnFront" class="btn">Na wierzch</button>
       <button id="btnBack" class="btn">Na spód</button>
       <button id="btnDup" class="btn">Duplikuj</button>
-      <button id="btnDel" class="btn" style="background:#5a2323;border-color:#7a2f2f">Usuń</button>
+      <button id="btnDel" class="btn danger">Usuń</button>
     </div>
-    <!-- [opt] PAD SOUND OVERRIDE (wyłączone na start, do włączenia gdy poprosisz) -->
-    <!--
-    <div class="row" style="margin-top:.4rem">
-      <span class="badge">Dźwięk:</span>
-      <select id="selSound" class="btn"></select>
-      <button id="btnSoundFile" class="btn">Plik…</button>
-      <input id="inpSoundFile" type="file" accept="audio/*" style="display:none">
-      <button id="btnClrSound" class="btn">Usuń przypisanie</button>
-    </div>
-    -->
   </div>
 </div>
 
-<!-- Firebase (Jam) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "PLACEHOLDER",
-  authDomain: "PLACEHOLDER.firebaseapp.com",
-  databaseURL: "https://PLACEHOLDER-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "PLACEHOLDER",
-  storageBucket: "PLACEHOLDER.appspot.com",
-  messagingSenderId: "PLACEHOLDER",
-  appId: "PLACEHOLDER"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-</script>
-
-<script>
-/* ==== AUDIO CORE (jak było) ==== */
+/* ==== AUDIO CORE (jak było w Twoim) ==== */
 let ctx=null, master=null, volumeNode=null, started=false;
 const vol=document.getElementById('volume');
 function initAudio(){ if(ctx) return;
@@ -345,58 +306,58 @@ async function startAudio(){
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureRunning(); });
 window.addEventListener('pageshow', ()=> ensureRunning() );
 
-function envGain(t,g,a=0.001,d=0.2,s=0.0,r=0.2){ g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(1.0,t+a); g.gain.exponentialRampToValueAtTime(Math.max(0.0001,s),t+a+d);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+a+d+r); }
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
 const now=()=>ctx?ctx.currentTime:0;
-/* ==== SYNTHS (Twoje) ==== */
-const S={ /* ... [BEZ ZMIAN – skrócone tutaj dla czytelności, wklej cały blok S z Twojego pliku] ... */ };
-/* Wklej *pełny* blok S z Twojego oryginalnego pliku tutaj (nic nie zmieniałem w jego zawartości). */
+/* ==== SYNTHS (wklej tu swoje S[...] z oryginału) ==== */
+const S = {
+  // …tu wklej Twój *pełny* blok S z pierwotnego pliku…
+  // przy braku – zostaw przykładowe:
+  kick: (t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(40,t+.14); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(1,t+.01); g.gain.exponentialRampToValueAtTime(0.001,t+.18); o.connect(g).connect(master); o.start(t); o.stop(t+.25); },
+  snare:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1200; const g=ctx.createGain(); g.gain.value=.6; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.12); },
+  hatClosed:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000; const g=ctx.createGain(); g.gain.value=.35; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.06); },
+  hatOpen:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000; const g=ctx.createGain(); g.gain.value=.3; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.25); },
+  tomLow:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(130,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.9,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.4); o.connect(g).connect(master); o.start(t); o.stop(t+.5); },
+  tomHigh:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(190,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.9,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.3); o.connect(g).connect(master); o.start(t); o.stop(t+.4); },
+  clap:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const g=ctx.createGain(); g.gain.value=.6; src.connect(g).connect(master); src.start(t); src.stop(t+.1); },
+  crash:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3000; const g=ctx.createGain(); g.gain.value=.4; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.7); },
+  ride:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=3500; const g=ctx.createGain(); g.gain.value=.25; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.6); },
+  rim:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='square'; o.frequency.setValueAtTime(900,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.7,t+.005); g.gain.exponentialRampToValueAtTime(.0001,t+.08); o.connect(g).connect(master); o.start(t); o.stop(t+.1); },
+  perc:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(400,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.8,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.12); o.connect(g).connect(master); o.start(t); o.stop(t+.18); },
+  kick808:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(38,t+.28); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(1,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.6); o.connect(g).connect(master); o.start(t); o.stop(t+.75); },
+};
+const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
 
-/* ==== SHAPES/COLORS & KITS (Twoje) ==== */
 const SHAPE={circle:new Set(['crash','ride','hatClosed','hatOpen','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
              hex:new Set(['tomHigh','tomLow','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             tri:new Set(['perc','rim','clapsticks']),
-             drum:new Set(['kick','kick808','djembeBass','djembeSlap','dundun','didgeridoo','fartShort','fartLong']),
-             rect:new Set(['snare','clap','woodblock','clave','shaker'])};
-const COLOR={kick:new Set(['kick','kick808','djembeBass','dundun']),
-             snare:new Set(['snare','clap','clapsticks','woodblock','clave']),
-             hats:new Set(['hatClosed','hatOpen','shaker']),
+             tri:new Set(['perc','rim','clap']),
+             drum:new Set(['kick','kick808']),
+             rect:new Set(['snare','clap'])};
+const COLOR={kick:new Set(['kick','kick808']),
+             snare:new Set(['snare','clap']),
+             hats:new Set(['hatClosed','hatOpen']),
              toms:new Set(['tomHigh','tomLow']),
              cym:new Set(['crash','ride']),
              hand:new Set(['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             fun:new Set(['fartShort','fartLong','perc','rim'])};
+             fun:new Set(['perc','rim'])};
 function shapeClass(id){if(SHAPE.circle.has(id))return'shape-circle';if(SHAPE.hex.has(id))return'shape-hex';if(SHAPE.tri.has(id))return'shape-tri';if(SHAPE.drum.has(id))return'shape-drum';return'shape-rect';}
 function colorClass(id){if(COLOR.kick.has(id))return'c-kick';if(COLOR.snare.has(id))return'c-snare';if(COLOR.hats.has(id))return'c-hats';if(COLOR.toms.has(id))return'c-toms';if(COLOR.cym.has(id))return'c-cym';if(COLOR.hand.has(id))return'c-hand';if(COLOR.fun.has(id))return'c-fun';return'';}
 
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
-  "Afryka":   ['djembeBass','djembeSlap','dundun','woodblock','clave','shaker','tomLow','tomHigh','crash','ride','rim','perc'],
-  "Australia":['didgeridoo','clapsticks','tomLow','tomHigh','rim','perc','crash','ride','snare','clap','kick','kick808'],
   "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
-  "FunFarts": ['fartShort','fartLong','clap','rim','perc','woodblock','clave','shaker','tomLow','tomHigh','crash','ride'],
 };
-const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
 
-function triggerById(id){
-  if(!ctx) initAudio();
-  if(!started || (ctx && (ctx.state==='suspended' || ctx.state==='interrupted'))) { startAudio(); }
-  if(id in HAND) return S.handpanNote(HAND[id]);
-  return S[id]?.();
-}
-
-/* ==== Scena / Układ (rozszerzone minimalnie) ==== */
+/* ======= SCENA / LAYOUT ======= */
 const stage=document.getElementById('stage');
 let currentKit=localStorage.getItem('kitName')||'Standard';
 let layoutMode=false;
-const positionsKey=()=> 'padPositions:'+currentKit; // rozszerzamy strukturę
+const positionsKey=()=> 'padPositions:'+currentKit;
 const layoutUseKey='useCanvasLayout';
 let useCanvasLayout = localStorage.getItem(layoutUseKey)==='1';
 
-let draftPositions=null; // { [padId]: {left,top,w,h,rot,label,color,z, /* [opt] sound */ } }
+let draftPositions=null;
 const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
@@ -404,29 +365,42 @@ const layoutCancel=document.getElementById('layoutCancel');
 function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* RENDER */
+/* Domyślne pozycje (%) gdy włączony Canvas, a brak zapisanych */
+function defaultPositionsForKit(list){
+  const out={};
+  const cols=3, rows=Math.ceil(list.length/cols);
+  const cellW= (100-8)/cols;  // 2% marginesy
+  const cellH= (100-8)/Math.max(rows,2);
+  list.forEach((id,i)=>{
+    const c=i%cols, r=Math.floor(i/cols);
+    out[id]={left:2 + c*cellW, top:2 + r*cellH, w:cellW-2, h:cellH-4, rot:0, label:id.toUpperCase(), color:null, z:i+1};
+  });
+  return out;
+}
+
 function renderPads(){
-  // tryb gry: standardowa siatka (jak było) albo Canvas (opcjonalnie)
-  const playCanvas = !layoutMode && useCanvasLayout && Object.keys(getSavedPositions()).length>0;
-  stage.className = (layoutMode || playCanvas) ? 'canvas' : 'grid';
+  const kitList = (KITS[currentKit]||[]).slice(0,12);
+  const saved = getSavedPositions();
+  const haveLayout = Object.keys(saved).length>0;
+  const playCanvas = (!layoutMode && useCanvasLayout) ? true : layoutMode; // wymuś Canvas gdy ON
+  stage.className = playCanvas ? 'canvas' : 'grid';
   stage.innerHTML='';
 
-  const pads = (KITS[currentKit]||[]).slice(0,12);
-  const P = layoutMode ? (draftPositions||{}) : getSavedPositions();
+  const P = layoutMode ? (draftPositions||{}) : (haveLayout ? saved : defaultPositionsForKit(kitList));
 
   if(stage.className==='grid'){
-    // klasyczny układ (bez pozycji, jak było)
-    pads.forEach((id)=>{
+    // Siatka klasyczna
+    kitList.forEach(id=>{
       const el=document.createElement('div');
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
-      el.textContent=(P[id]?.label)||id.toUpperCase(); // pokazuj własną etykietę jeśli istnieje
+      el.textContent=(saved[id]?.label)||id.toUpperCase();
       stage.appendChild(el);
     });
   }else{
-    // canvas: użyj pozycji i rozmiarów (w %), w layoutMode interakcje edycji
-    pads.forEach((id, idx)=>{
-      const cfg = P[id] || {left:(idx%3)*32+2, top:Math.floor(idx/3)*20+2, w:30, h:18, rot:0, label:id.toUpperCase(), color:null, z: idx+1};
+    // Canvas (pozycje w %)
+    kitList.forEach((id,idx)=>{
+      const cfg=P[id]||defaultPositionsForKit([id])[id];
       const el=document.createElement('div');
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
@@ -436,12 +410,11 @@ function renderPads(){
       el.style.width=(cfg.w??30)+'%';
       el.style.height=(cfg.h??18)+'%';
       el.style.transform=`rotate(${cfg.rot||0}deg)`;
-      el.style.zIndex = String(cfg.z||1);
-      if(cfg.color) el.style.background = cfg.color;
+      el.style.zIndex=String(cfg.z||1);
+      if(cfg.color) el.style.background=cfg.color;
       el.textContent=(cfg.label)||id.toUpperCase();
 
       if(layoutMode){
-        // selection + handles
         el.addEventListener('pointerdown', (e)=>selectPad(el, e));
         addHandles(el);
         makeDraggable(el, true);
@@ -453,8 +426,12 @@ function renderPads(){
     });
   }
 
+  // pasek
   layoutBar.style.display = layoutMode ? 'flex' : 'none';
   document.getElementById('editPanel').style.display = (layoutMode && selectedPadEl)?'block':(layoutMode?'block':'none');
+
+  // Po przełączeniu z edycji do gry usuń uchwyty
+  if(!layoutMode){ clearSelectionAndHandles(); }
 }
 
 /* TRYB UKŁAD */
@@ -467,6 +444,7 @@ function enterLayout(){
 function exitLayout(save){
   if(save){ setSavedPositions(draftPositions); }
   layoutMode=false; draftPositions=null; selectedPadEl=null;
+  clearSelectionAndHandles();
   renderPads();
 }
 layoutSave.onclick = ()=> exitLayout(true);
@@ -474,25 +452,22 @@ layoutCancel.onclick = ()=> exitLayout(false);
 
 /* GRANIE */
 function padDown(el){
-  const baseId = el.dataset.sound;
-  // jeśli kiedyś włączymy per-pad override, można tu sprawdzić draft/saved cfg.sound
-  triggerById(baseId);
+  const id = el.dataset.sound;
+  if(!ctx) initAudio();
+  if(!started || (ctx && (ctx.state==='suspended' || ctx.state==='interrupted'))) { startAudio(); }
+  S[id]?.();
   el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),120);
-  jamEmit(baseId);
 }
-stage.addEventListener('pointerdown',(e)=>{ if(stage.className==='grid'){ const el=e.target.closest('.pad'); if(!el) return; e.preventDefault(); padDown(el);}},{passive:false});
-stage.addEventListener('touchstart',(e)=>{ if(stage.className==='grid'){ const el=e.target.closest('.pad'); if(!el) return; padDown(el);}},{passive:true});
 
-/* DRAG + SCALE + ROTATE w layoutMode */
+/* DRAG + SCALE + ROTATE */
 function stageRect(){ return stage.getBoundingClientRect(); }
 
-function makeDraggable(el, withScaleRotate=false){
-  let sx=0,sy=0,sl=0,st=0,sw=0,sh=0,drag=false;
+function makeDraggable(el){
+  let sx=0,sy=0,sl=0,st=0,drag=false;
   const down=(ev)=>{ if(!layoutMode) return;
     drag=true; el.classList.add('dragging');
     const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
     sl=((P.left-R.left)/R.width)*100; st=((P.top-R.top)/R.height)*100;
-    sw=(P.width/R.width)*100; sh=(P.height/R.height)*100;
     sx=ev.clientX||(ev.touches&&ev.touches[0].clientX); sy=ev.clientY||(ev.touches&&ev.touches[0].clientY);
     addEventListener('pointermove',move); addEventListener('pointerup',up,{once:true});
     addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up,{once:true});
@@ -511,7 +486,6 @@ function makeDraggable(el, withScaleRotate=false){
 }
 
 function addHandles(el){
-  // usuń stare
   el.querySelectorAll('.handle').forEach(h=>h.remove());
   ['nw','ne','sw','se','rot'].forEach(pos=>{
     const h=document.createElement('div');
@@ -548,14 +522,12 @@ function startTransform(e, el, type){
     const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
     const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
     if(type==='rot'){
-      // obrót względem środka
       const cx = (el.getBoundingClientRect().left - R.left) + el.getBoundingClientRect().width/2;
       const cy = (el.getBoundingClientRect().top - R.top) + el.getBoundingClientRect().height/2;
       const ang = Math.atan2((y - (R.top+cy)), (x - (R.left+cx)));
       const deg = Math.round((ang*180/Math.PI + 90));
       el.style.transform=`rotate(${deg}deg)`;
     }else{
-      // skalowanie w % + ewentualny ruch przy NW/NE/SW
       let l=start.l, t=start.t, w=start.w, h=start.h;
       if(type==='se'){ w = clampPc(start.w + dx); h = clampPc(start.h + dy); }
       if(type==='ne'){ w = clampPc(start.w + dx); h = clampPc(start.h - dy); t = clampPc(start.t + dy); }
@@ -593,7 +565,7 @@ function savePadRect(el){
   });
 }
 
-/* EDIT PANEL (etykieta/kolor/z-index/duplikuj/usuń) */
+/* EDIT PANEL */
 const editPanel = document.getElementById('editPanel');
 const epLabel = document.getElementById('epLabel');
 const inpLabel = document.getElementById('inpLabel');
@@ -611,22 +583,22 @@ function updateEditPanelFromEl(el, live=false){
   epLabel.textContent = id;
   if(!live){
     inpLabel.value = el.textContent.trim();
+    // kolor wejściowego pickera ustawiamy tylko gdy to kolor heks
+    const c = (el.style.background||'').trim();
+    if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) inpColor.value=c;
   }
 }
-
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   selectedPadEl.textContent = inpLabel.value.trim() || selectedPadEl.dataset.sound.toUpperCase();
   savePadRect(selectedPadEl);
 });
-
 btnColor.addEventListener('click', ()=> inpColor.click());
 inpColor.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   selectedPadEl.style.background = inpColor.value;
   savePadRect(selectedPadEl);
 });
-
 btnFront.addEventListener('click', ()=>{
   if(!selectedPadEl) return;
   selectedPadEl.style.zIndex = String(Date.now()%2147483647);
@@ -639,39 +611,25 @@ btnBack.addEventListener('click', ()=>{
 });
 btnDup.addEventListener('click', ()=>{
   if(!selectedPadEl) return;
-  const id = selectedPadEl.dataset.sound;
-  // duplikujemy WŁAŚNIE TEN pad (ten sam dźwięk) z przesunięciem
   const R=stageRect(), P=selectedPadEl.getBoundingClientRect();
-  const cfg = {
-    left: ((P.left-R.left)/R.width)*100 + 4,
-    top:  ((P.top-R.top)/R.height)*100 + 4,
-    w: (P.width/R.width)*100, h:(P.height/R.height)*100,
-    rot: getRotationFromTransform(selectedPadEl.style.transform)||0,
-    label: selectedPadEl.textContent.trim(),
-    color: selectedPadEl.style.background||null,
-    z: (Date.now()%2147483647)
-  };
-  if(!draftPositions) draftPositions={};
-  // znajdź wolny slot: jeśli dany dźwięk już istnieje, dodamy kopię pod tym samym id? — trzymamy JEDEN wpis per padId.
-  // Tu: zapisujemy pod tym samym id (pozycje są per id dźwięku), więc duplikat logicznie się „nadpisze”.
-  // Aby zachować prosto i bez rewolucji: tworzymy nowy pad *tylko wizualnie* w tej sesji:
   const ghost = selectedPadEl.cloneNode(true);
-  ghost.style.left = cfg.left+'%'; ghost.style.top = cfg.top+'%';
-  ghost.style.zIndex = String(cfg.z);
+  const left=((P.left-R.left)/R.width)*100 + 4;
+  const top =((P.top -R.top )/R.height)*100 + 4;
+  ghost.style.left=left+'%'; ghost.style.top=top+'%';
+  ghost.style.zIndex = String(Date.now()%2147483647);
   stage.appendChild(ghost);
   addHandles(ghost); makeDraggable(ghost,true);
 });
 btnDel.addEventListener('click', ()=>{
   if(!selectedPadEl) return;
-  // Usuwamy TYLKO z canvasu (wizualnie) i zapis z pozycji — nie kasujemy dźwięku z KITS
   const id = selectedPadEl.dataset.sound;
   selectedPadEl.remove();
   if(draftPositions && draftPositions[id]) delete draftPositions[id];
   selectedPadEl=null;
-  editPanel.style.display='block'; // zostaw panel, ale bez wybranego
+  editPanel.style.display='block';
 });
 
-/* ==== MENU / HAMBURGER (jak było + toggle layoutUse) ==== */
+/* MENU / TOGGLE / BPM */
 const menuBtn=document.getElementById('menuBtn');
 const hambit=document.getElementById('hambit');
 const menuPanel=document.getElementById('menuPanel');
@@ -682,7 +640,12 @@ const layoutStart=document.getElementById('layoutStart');
 const layoutUseBtn=document.getElementById('layoutUseBtn');
 const sizeEl=document.getElementById('size');
 const themeBtn=document.getElementById('themeBtn');
-const bpmEl=document.getElementById('bpm'); const bpmVal=document.getElementById('bpmVal');
+const bpmEl=document.getElementById('bpm');
+const bpmVal=document.getElementById('bpmVal');
+const bpmTopVal=document.getElementById('bpmTopVal');
+
+function setToggle(btn, on){ btn.dataset.on = on ? '1':'0'; }
+function isOn(btn){ return btn.dataset.on === '1'; }
 
 function fillKits(){
   kitSelect.innerHTML='';
@@ -695,21 +658,35 @@ function closeMenu(){ menuPanel.style.display='none'; menuPanel.setAttribute('ar
 function hideChrome(){ document.body.classList.add('chrome-hidden'); }
 menuBtn.onclick = openMenu;
 hambit.onclick = openMenu;
-menuCancel.onclick = ()=>{ closeMenu(); hideChrome(); };
+menuCancel.onclick = ()=>{ closeMenu(); hideChrome(); clearSelectionAndHandles(); renderPads(); };
 menuOk.onclick = ()=>{
   const chosen = kitSelect.value;
   if(chosen && chosen!==currentKit){ currentKit=chosen; localStorage.setItem('kitName', currentKit); }
+  // wyjście z ewentualnej edycji
+  if(layoutMode){ exitLayout(true); }
+  clearSelectionAndHandles();
   renderPads();
   closeMenu(); hideChrome();
 };
+
 layoutStart.onclick = ()=>{ closeMenu(); enterLayout(); };
 
-function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); themeBtn.textContent = 'Neon: ' + (t==='neon'?'ON':'OFF'); }
+function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); setToggle(themeBtn, t==='neon'); }
 let theme = localStorage.getItem('theme') || 'dark';
 applyTheme(theme);
 themeBtn.onclick = ()=>{ theme = (theme==='neon'?'dark':'neon'); localStorage.setItem('theme', theme); applyTheme(theme); };
 
-/* Rozmiar (bez zmian) */
+/* Użyj mojego układu */
+function applyUseBtn(){ setToggle(layoutUseBtn, useCanvasLayout); }
+layoutUseBtn.addEventListener('click', ()=>{
+  useCanvasLayout = !useCanvasLayout;
+  localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0');
+  applyUseBtn();
+  // jeśli wychodzimy z edycji, dopilnuj uchwytów
+  if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
+});
+
+/* Rozmiar */
 sizeEl.addEventListener('input',(e)=>{
   const v = Number(e.target.value); const scale = v/100;
   document.documentElement.style.setProperty('--size-min',  Math.round(84*scale)+'px');
@@ -717,171 +694,34 @@ sizeEl.addEventListener('input',(e)=>{
   document.documentElement.style.setProperty('--size-max',  Math.round(160*scale)+'px');
 });
 
-/* Głośność */
-vol.addEventListener('input',()=>{ if(volumeNode) volumeNode.gain.value=parseFloat(vol.value); });
+/* BPM */
+function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=String(v); }
+bpmEl.addEventListener('input',(e)=> setBpmDisplay(e.target.value) );
+setBpmDisplay(bpmEl.value);
 
 /* Start overlay */
 const tapStart=document.getElementById('tapStart');
 const tapStartBtn=document.getElementById('tapStartBtn');
 ['click','touchstart'].forEach(ev=> tapStartBtn.addEventListener(ev,()=>startAudio(),{passive:true}) );
 
-/* ==== METRONOM (bez zmian) ==== */
-const metroBtn=document.getElementById('metroBtn');
-let metroTimer = null, metroRunning = false, metroBpm = parseInt(bpmEl.value,10), metroStartAt = 0;
-function metroClick(t = ctx?.currentTime || 0){
-  if(!ctx) initAudio();
-  const nb = ctx.createBufferSource(); nb.buffer = sharedNoise();
-  const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=4000;
-  const g  = ctx.createGain(); g.gain.value=0.0001;
-  g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-  nb.connect(hp).connect(g).connect(master); nb.start(t); nb.stop(t+0.08);
+/* Narzędzia */
+function clearSelectionAndHandles(){
+  document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
+  document.querySelectorAll('.pad .handle').forEach(h=>h.remove());
+  editPanel.style.display='none';
+  selectedPadEl=null;
 }
-function startMetronomeSync(bpm, startAtMs){
-  metroBpm = bpm; metroStartAt = startAtMs; stopMetronome();
-  metroRunning = true; metroBtn.textContent = 'Metro: ON'; bpmVal.textContent = String(metroBpm);
-  const beatMs = 60000 / metroBpm;
-  const loop = ()=>{
-    if(!metroRunning) return;
-    const nowMs = (performance.timing?.navigationStart||0) + performance.now();
-    const beats = (nowMs - metroStartAt) / beatMs;
-    const nextBeatIndex = Math.ceil(beats);
-    const nextBeatTimeMs = metroStartAt + nextBeatIndex * beatMs;
-    const delayMs = Math.max(0, nextBeatTimeMs - nowMs);
-    if(ctx){ ensureRunning().then(()=>{ const when = ctx.currentTime + (delayMs/1000); metroClick(when); }); }
-    metroTimer = setTimeout(loop, Math.max(30, delayMs * 0.25));
-  };
-  loop();
+
+/* START – respektuj „Użyj mojego układu” już na starcie */
+function initialRender(){
+  applyUseBtn(); // odśwież stan przycisku
+  renderPads();  // jeśli ON → Canvas od razu; jeśli brak pozycji → defaultPositionsForKit
+  tapStart.style.display='flex';
 }
-function stopMetronome(){ metroRunning = false; metroBtn.textContent = 'Metro: OFF'; if(metroTimer){ clearTimeout(metroTimer); metroTimer=null; } }
-bpmEl.addEventListener('input',(e)=>{
-  metroBpm = parseInt(e.target.value,10)||100; bpmVal.textContent = String(metroBpm);
-  if(metroRunning){
-    const startAt = Date.now() + 600;
-    startMetronomeSync(metroBpm, startAt);
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:true, bpm: metroBpm, startAt, by: clientId });
-  }
-});
-metroBtn.addEventListener('click', ()=>{
-  if(!metroRunning){
-    const startAt = Date.now() + 600;
-    startMetronomeSync(metroBpm, startAt);
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:true, bpm: metroBpm, startAt, by: clientId });
-  }else{
-    stopMetronome();
-    if(jamOn && roomRef) roomRef.child('metro').set({ running:false, by: clientId });
-  }
-});
-
-/* ==== JAM (bez zmian) ==== */
-const jamBtn=document.getElementById('jamBtn');
-const jamInfo=document.getElementById('jamInfo');
-const jamRoomLabel=document.getElementById('jamRoomLabel');
-let jamOn=false, roomId=null, clientId=(crypto.getRandomValues(new Uint32Array(1))[0]).toString(16);
-let roomRef=null, eventsRef=null, eventsListener=null;
-function setJamUI(){ jamBtn.textContent='Jam: '+(jamOn?'ON':'OFF'); jamInfo.style.display=jamOn?'block':'none'; jamRoomLabel.textContent=roomId||'—';}
-function promptRoom(){ const code=prompt('Kod pokoju (np. ABC123):',(roomId||'JAM001')); return code?.replace(/[^A-Za-z0-9_-]/g,'').slice(0,24)||null; }
-function jamEmit(padId){ if(!jamOn||!roomId) return; eventsRef.push({pad:padId,kit:currentKit,clientId,ts:Date.now()}).catch(()=>{}); }
-async function jamEnable(){
-  const code=promptRoom(); if(!code) return; roomId=code;
-  roomRef=firebase.database().ref('rooms/'+roomId); eventsRef=roomRef.child('events');
-  const pr=roomRef.child('presence').child(clientId); pr.set({ts:firebase.database.ServerValue.TIMESTAMP}); pr.onDisconnect().remove();
-  if(eventsListener) eventsRef.off('child_added',eventsListener);
-  eventsListener=eventsRef.limitToLast(64).on('child_added',(snap)=>{
-    const ev=snap.val(); if(!ev||ev.clientId===clientId) return;
-    if(Date.now()-(ev.ts||0)>5000){ snap.ref.remove(); return; }
-    if(ev.kit && ev.kit!==currentKit) return;
-    triggerById(ev.pad);
-    const pad=[...stage.querySelectorAll('.pad')].find(p=>p.dataset.sound===ev.pad);
-    if(pad){ pad.classList.add('active'); setTimeout(()=>pad.classList.remove('active'),120); }
-  });
-  const metroRef = roomRef.child('metro');
-  metroRef.on('value',(snap)=>{
-    const v=snap.val(); if(!v) return;
-    if(v.running){
-      if(metroRunning && v.bpm===metroBpm && Math.abs(metroStartAt - v.startAt)<5) return;
-      startMetronomeSync(v.bpm, v.startAt); bpmEl.value = v.bpm; bpmVal.textContent = String(v.bpm);
-    }else{
-      if(metroRunning) stopMetronome();
-    }
-  });
-  jamOn=true; setJamUI();
-}
-function jamDisable(){
-  jamOn=false; setJamUI();
-  if(eventsListener&&eventsRef) eventsRef.off('child_added',eventsListener);
-  if(roomRef){ roomRef.child('presence').child(clientId).remove(); roomRef.child('metro').off(); }
-  eventsListener=null; roomRef=null; eventsRef=null;
-}
-jamBtn.onclick = ()=>{ if(!jamOn) jamEnable(); else jamDisable(); };
-
-/* ==== CUSTOM (Twoje) ==== */
-const customPanel=document.getElementById('customPanel');
-const fileInput=document.getElementById('fileInput');
-const loadFiles=document.getElementById('loadFiles');
-const customList=document.getElementById('customList');
-const customOk=document.getElementById('customOk');
-const customCancel=document.getElementById('customCancel');
-const customExport=document.getElementById('customExport');
-const customBtn=document.getElementById('customBtn');
-let customBuffers=[];
-
-customBtn.onclick = ()=>{ customPanel.style.display='block'; }
-customCancel.onclick = ()=>{ customPanel.style.display='none'; }
-loadFiles.onclick = async ()=>{
-  if(!fileInput.files.length){ alert('Wybierz pliki audio.'); return; }
-  customBuffers=[]; customList.innerHTML='';
-  for(const f of Array.from(fileInput.files).slice(0,12)){
-    const arr = await f.arrayBuffer();
-    const tmpAC = ctx || new (window.AudioContext||window.webkitAudioContext)();
-    const buf = await tmpAC.decodeAudioData(arr);
-    const item = {name: f.name.replace(/\.[^/.]+$/,''), buffer: buf, shape: 'shape-rect'};
-    customBuffers.push(item);
-    const row=document.createElement('div'); row.className='menu-row';
-    const name=document.createElement('span'); name.textContent=item.name;
-    const sel=document.createElement('select');
-    ['shape-rect','shape-circle','shape-hex','shape-tri','shape-drum'].forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s.replace('shape-',''); sel.appendChild(o); });
-    sel.value=item.shape; sel.onchange=()=> item.shape=sel.value;
-    row.appendChild(name); row.appendChild(sel); customList.appendChild(row);
-  }
-};
-customOk.onclick = ()=>{
-  if(customBuffers.length===0){ alert('Brak wczytanych plików.'); return; }
-  customBuffers.forEach((it, i)=>{
-    const id = 'custom'+(i+1);
-    S[id] = (t=now())=>{ const src=ctx.createBufferSource(); src.buffer=it.buffer; const g=ctx.createGain(); g.gain.value=1.0; src.connect(g).connect(master); src.start(t); };
-  });
-  const kitName='Custom';
-  KITS[kitName] = customBuffers.map((_,i)=> 'custom'+(i+1)).slice(0,12);
-  customBuffers.forEach((it,i)=>{
-    const id='custom'+(i+1); Object.values(SHAPE).forEach(set=>set.delete?.(id));
-    const map={ 'shape-rect':'rect','shape-circle':'circle','shape-hex':'hex','shape-tri':'tri','shape-drum':'drum' };
-    const bucket = map[it.shape]; if(bucket) (SHAPE[bucket]||SHAPE.rect).add(id);
-  });
-  currentKit=kitName; localStorage.setItem('kitName', kitName);
-  renderPads(); customPanel.style.display='none';
-};
-customExport.onclick = ()=>{
-  const cfg = customBuffers.map((b,i)=>({id:'custom'+(i+1), name:b.name, shape:b.shape}));
-  const blob = new Blob([JSON.stringify(cfg,null,2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='custom_kit_map.json'; a.click();
-};
-
-/* START */
-function initialRender(){ renderPads(); tapStart.style.display='flex'; }
 window.addEventListener('load', initialRender);
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && (!ctx||ctx.state!=='running')) tapStart.style.display='flex'; });
 
-/* PWA SW (Twoje) */
+/* PWA SW */
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
-
-/* Toggle „Użyj mojego układu” */
-function applyUseBtn(){ layoutUseBtn.textContent = 'Użyj mojego układu: ' + (useCanvasLayout?'ON':'OFF'); }
-layoutUseBtn.addEventListener('click', ()=>{
-  useCanvasLayout = !useCanvasLayout;
-  localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0');
-  applyUseBtn();
-  renderPads();
-});
 </script>
 </body>
 </html>
