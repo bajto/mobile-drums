@@ -4,43 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Drum Pad</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" href="icon-512.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0b0d10">
 <style>
 :root{
   --bg:#0b0d10; --text:#e6edf3; --muted:#9aa4ad;
-  --pad:#1b1f24; --pad2:#14181d; --pad-active:#2d333b; --accent:#4aa3ff;
+  --pad:#1b1f24; --pad-active:#2d333b; --accent:#4aa3ff;
   --topbar-h:52px;
   --size-min:84px; --size-vw:28vw; --size-max:160px;
   --btn-bg:#12161b; --btn-br:#2b3138; --btn-glow:rgba(74,163,255,.35);
 }
 *{box-sizing:border-box}
-html,body{
-  margin:0;height:100%;background:var(--bg);color:var(--text);
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-}
-body, #app{min-height:100svh}
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+body,#app{min-height:100svh}
 
-/* Top bar */
-.topbar{
-  position:fixed;top:0;left:0;right:0;z-index:90;height:var(--topbar-h);
-  display:flex;align-items:center;gap:.6rem;
-  padding:0 .6rem env(safe-area-inset-right,12px) env(safe-area-inset-left,12px);
-  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));
-}
+/* Topbar */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:90;height:var(--topbar-h);
+  display:flex;align-items:center;gap:.6rem;padding:0 .6rem; background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,0));}
 .title{font-weight:800;letter-spacing:.4px;margin-left:.2rem}
 .muted{color:var(--muted);font-size:.9rem}
 .badge{font-size:.85rem;color:var(--muted);padding:.1rem .4rem;border:1px solid var(--btn-br);border-radius:.5rem;background:#0e1116}
 
-/* Przycisk – jeden system dla wszystkich wariantów */
+/* Buttons (spójny system + neon) */
 .btn, select, input[type="text"]{
   appearance:none;cursor:pointer;font-weight:700;color:var(--text);
-  background:var(--btn-bg);border:1px solid var(--btn-br);border-radius:.6rem;
+  background:var(--btn-bg);border:1px solid var(--btn-br);border-radius:.8rem;
   padding:.5rem .8rem;display:inline-flex;align-items:center;gap:.45rem;
   box-shadow:0 0 0 1px rgba(255,255,255,.02) inset, 0 4px 16px rgba(0,0,0,.32);
 }
@@ -50,12 +39,10 @@ body, #app{min-height:100svh}
 .btn.primary{background:#142231;border-color:#356a92}
 .btn.toggle{position:relative}
 .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 0 3px rgba(74,163,255,.13)}
-select{cursor:pointer}
 
-/* Neon – identycznie dla wszystkich typów */
 body.theme-neon{
   --bg:#070910; --text:#e9f6ff; --muted:#9cc7ff;
-  --pad:#0b1020; --pad2:#0a0e1a; --pad-active:#111a33; --accent:#00e5ff;
+  --pad:#0b1020; --pad-active:#111a33; --accent:#00e5ff;
   --btn-bg:#0a1121; --btn-br:#123154; --btn-glow:rgba(0,229,255,.45);
 }
 body.theme-neon .btn, body.theme-neon select, body.theme-neon input[type="text"]{
@@ -64,29 +51,21 @@ body.theme-neon .btn, body.theme-neon select, body.theme-neon input[type="text"]
 }
 body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 14px var(--btn-glow), 0 0 0 3px rgba(0,229,255,.15)}
 
-/* Scena */
-#stage{
-  position:fixed;
-  top:calc(var(--topbar-h) + 4px);
-  left:0;right:0;
-  bottom:calc(env(safe-area-inset-bottom,0px) + 6px);
-  padding:.8rem;overflow:hidden;touch-action:manipulation;
-}
-.grid{
-  display:grid;gap:.8rem;
+/* Stage */
+#stage{position:fixed; top:calc(var(--topbar-h) + 4px); left:0; right:0; bottom:6px; padding:.8rem; overflow:hidden; touch-action:manipulation;}
+.grid{display:grid;gap:.8rem;
   grid-template-columns:repeat(auto-fit,minmax(clamp(var(--size-min), var(--size-vw), var(--size-max)),1fr));
-  grid-auto-rows:minmax(clamp(72px,16vh,180px),1fr);align-content:start
-}
+  grid-auto-rows:minmax(clamp(72px,16vh,180px),1fr); align-content:start}
 .canvas{position:relative}
 .canvas .pad{position:absolute;touch-action:none}
 
-/* Pady */
+/* Pads (tylko pełne kształty – bez clip-path) */
 .pad{
-  background:var(--pad);border:1px solid #2b3138;border-radius:1rem;
+  background:var(--pad);border:1px solid #2b3138;border-radius:2rem; /* bazowo „round” */
   display:flex;align-items:center;justify-content:center;text-align:center;
   padding:.45rem;user-select:none;-webkit-user-select:none;font-weight:800;letter-spacing:.3px;
   box-shadow:0 2px 0 rgba(0,0,0,.5) inset,0 6px 18px rgba(0,0,0,.25);
-  touch-action:none;font-size:16px; color:#fff;
+  touch-action:none;font-size:16px; color:#fff; outline-offset:0;
 }
 .pad.active{
   background:var(--pad-active);outline:2px solid var(--accent);
@@ -94,13 +73,11 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   transform:scale(.99)
 }
 .pad.dragging{opacity:.95;outline:2px dashed var(--accent)}
-.shape-circle{border-radius:999px}
-.shape-rect{border-radius:1rem}
-.shape-hex{clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%)}
-.shape-tri{clip-path:polygon(50% 0%,0% 100%,100% 100%)}
-.shape-drum{clip-path:path("M10,50 C10,20 90,20 90,50 C90,80 10,80 10,50 Z");border-radius:0}
+.shape-round{border-radius:2rem}
+.shape-oval{border-radius:9999px}
+.shape-circle{border-radius:9999px}
 
-/* Kolory kategorii (jak było) */
+/* Kolory kategorii (delikatny gradient – bez przycinania) */
 .c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%)}
 .c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%)}
 .c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%)}
@@ -109,59 +86,27 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%)}
 .c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%)}
 
-/* Menu panel */
-#menuPanel{
-  position:fixed;inset:0;z-index:100;display:none;
+/* Menu */
+#menuPanel{position:fixed;inset:0;z-index:100;display:none;
   background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);
-  padding:calc(env(safe-area-inset-top,0) + 64px) 14px calc(env(safe-area-inset-bottom,0) + 14px);
-  color:var(--text)
-}
-.menu-card{
-  margin:0 auto;max-width:720px;background:#0e1116;border:1px solid #2b3138;border-radius:1rem;
-  padding:.9rem
-}
+  padding:64px 14px 14px;color:var(--text)}
+.menu-card{margin:0 auto;max-width:720px;background:#0e1116;border:1px solid #2b3138;border-radius:1rem; padding:.9rem}
 .menu-section{border-top:1px solid #212832;margin-top:.7rem;padding-top:.7rem}
 .menu-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
 .menu-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.7rem}
 
-/* Pasek Układu */
-#layoutBar{
-  position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(10px + env(safe-area-inset-bottom,0));
-  z-index:95;display:none;gap:.5rem
-}
+/* Layout bar */
+#layoutBar{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:10px; z-index:95; display:none; gap:.5rem}
 
 /* Start overlay */
-#tapStart{
-  position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
-  padding:2rem;text-align:center;color:var(--text);background:rgba(0,0,0,.86)
-}
+#tapStart{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+  padding:2rem;text-align:center;color:var(--text);background:rgba(0,0,0,.86)}
 #tapStart .big{font-size:1.25rem;font-weight:800}
-#tapStart .hint{opacity:.8}
 
-/* Przyciski na pasku */
-.iconbtn{
-  appearance:none;cursor:pointer;border:1px solid var(--btn-br);border-radius:.6rem;
-  background:var(--btn-bg);color:var(--text);padding:.5rem .8rem;display:flex;align-items:center;gap:.4rem
-}
-.icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
-.icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
-.icon::before{top:-6px}.icon::after{top:6px}
-
-/* Chrome hidden */
-body.chrome-hidden .topbar{display:none}
-#hambit{
-  position:fixed;z-index:92;top:8px;left:8px;
-  padding:.5rem .6rem;border-radius:.6rem;border:1px solid var(--btn-br);background:var(--btn-bg);color:var(--text);
-  display:none
-}
-body.chrome-hidden #hambit{display:flex}
-
-/* Panel edycji pada */
-#editPanel{
-  position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;
-  background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)
-}
+/* Edit panel */
+#editPanel{position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;
+  background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)}
 #editPanel .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .pad.selected{outline:2px solid var(--accent)}
 .handle{position:absolute;width:16px;height:16px;background:#fff;border:2px solid #0007;border-radius:50%;box-shadow:0 2px 6px #0008;touch-action:none}
@@ -170,6 +115,13 @@ body.chrome-hidden #hambit{display:flex}
 .h-sw{left:-10px;bottom:-10px;cursor:nesw-resize}
 .h-se{right:-10px;bottom:-10px;cursor:nwse-resize}
 .h-rot{left:50%;top:-36px;transform:translateX(-50%);width:20px;height:20px;cursor:grab}
+
+/* Icon btn */
+.iconbtn{appearance:none;cursor:pointer;border:1px solid var(--btn-br);border-radius:.8rem;
+  background:var(--btn-bg);color:var(--text);padding:.5rem .8rem;display:flex;align-items:center;gap:.4rem}
+.icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
+.icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
+.icon::before{top:-6px}.icon::after{top:6px}
 </style>
 </head>
 <body>
@@ -181,28 +133,21 @@ body.chrome-hidden #hambit{display:flex}
     <div style="margin-left:auto" class="badge">BPM: <span id="bpmTopVal">100</span></div>
   </div>
 
-  <button id="hambit" class="iconbtn" title="Menu"><span class="icon"></span></button>
-
   <div id="tapStart">
     <div class="big">Dotknij, aby rozpocząć</div>
     <button id="tapStartBtn" class="btn primary">Start audio</button>
-    <div class="hint">iOS wymaga dotknięcia ekranu, by włączyć dźwięk</div>
   </div>
 
   <div id="stage" class="grid"></div>
 
-  <!-- Pasek akcji Układ -->
   <div id="layoutBar">
     <button id="layoutSave" class="btn primary">Zapisz</button>
     <button id="layoutCancel" class="btn ghost">Anuluj</button>
   </div>
 
-  <!-- MENU -->
   <div id="menuPanel" aria-hidden="true">
     <div class="menu-card">
-      <div class="menu-section">
-        <div class="menu-row"><strong>Ustawienia</strong><span class="badge">wybierz i „OK”</span></div>
-      </div>
+      <div class="menu-section"><div class="menu-row"><strong>Ustawienia</strong><span class="badge">wybierz i „OK”</span></div></div>
 
       <div class="menu-section">
         <div class="menu-row">
@@ -251,22 +196,6 @@ body.chrome-hidden #hambit{display:flex}
     </div>
   </div>
 
-  <!-- Panel własnych dźwięków (bez zmian) -->
-  <div id="customPanel" class="menu-card" style="display:none;position:fixed;inset:10% 5%;z-index:110;overflow:auto">
-    <h3>Własny zestaw</h3>
-    <div class="badge">Dodaj do 12 plików (WAV/MP3/OGG) — wczytane tylko na czas sesji.</div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0 .6rem">
-      <input id="fileInput" type="file" accept="audio/*" multiple>
-      <button id="loadFiles" class="btn">Wczytaj</button>
-    </div>
-    <div id="customList"></div>
-    <div class="menu-actions">
-      <button id="customExport" class="btn">Eksport mapy (JSON)</button>
-      <button id="customCancel" class="btn ghost">Zamknij</button>
-      <button id="customOk" class="btn primary">Użyj zestawu</button>
-    </div>
-  </div>
-
   <!-- Panel edycji pada -->
   <div id="editPanel">
     <div class="row">
@@ -275,16 +204,28 @@ body.chrome-hidden #hambit{display:flex}
       <input id="inpLabel" type="text" placeholder="etykieta" class="btn" style="min-width:140px">
       <button id="btnColor" class="btn">Kolor</button>
       <input id="inpColor" type="color" style="display:none">
+      <select id="selShape" class="btn">
+        <option value="oval">Owal</option>
+        <option value="round">Zaokrąglony</option>
+        <option value="circle">Okrągły</option>
+      </select>
       <button id="btnFront" class="btn">Na wierzch</button>
       <button id="btnBack" class="btn">Na spód</button>
       <button id="btnDup" class="btn">Duplikuj</button>
       <button id="btnDel" class="btn danger">Usuń</button>
     </div>
+    <div class="row" style="margin-top:.4rem">
+      <span class="badge">Dźwięk:</span>
+      <button id="btnSoundFile" class="btn">Plik…</button>
+      <input id="inpSoundFile" type="file" accept="audio/*" style="display:none">
+      <button id="btnSoundUrl" class="btn">URL…</button>
+      <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ==== AUDIO CORE (jak było w Twoim) ==== */
+/* === AUDIO CORE === */
 let ctx=null, master=null, volumeNode=null, started=false;
 const vol=document.getElementById('volume');
 function initAudio(){ if(ctx) return;
@@ -295,26 +236,15 @@ function initAudio(){ if(ctx) return;
   volumeNode.gain.value=parseFloat(vol.value);
   const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02);
 }
-async function ensureRunning(){
-  if(!ctx) initAudio();
-  if(ctx.state==='suspended' || ctx.state==='interrupted'){ try{ await ctx.resume(); }catch{} }
-}
-async function startAudio(){
-  initAudio(); await ensureRunning();
-  started=true; tapStart.style.display='none';
-}
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureRunning(); });
-window.addEventListener('pageshow', ()=> ensureRunning() );
-
+async function ensureRunning(){ if(!ctx) initAudio(); if(ctx.state!=='running'){ try{ await ctx.resume(); }catch{} } }
+async function startAudio(){ initAudio(); await ensureRunning(); started=true; tapStart.style.display='none'; }
+const now=()=>ctx?ctx.currentTime:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
-const now=()=>ctx?ctx.currentTime:0;
-/* ==== SYNTHS (wklej tu swoje S[...] z oryginału) ==== */
-const S = {
-  // …tu wklej Twój *pełny* blok S z pierwotnego pliku…
-  // przy braku – zostaw przykładowe:
-  kick: (t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(40,t+.14); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(1,t+.01); g.gain.exponentialRampToValueAtTime(0.001,t+.18); o.connect(g).connect(master); o.start(t); o.stop(t+.25); },
+/* === SYNTHS === */
+const S={
+  kick:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(40,t+.14); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(1,t+.01); g.gain.exponentialRampToValueAtTime(0.001,t+.18); o.connect(g).connect(master); o.start(t); o.stop(t+.25); },
   snare:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1200; const g=ctx.createGain(); g.gain.value=.6; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.12); },
   hatClosed:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000; const g=ctx.createGain(); g.gain.value=.35; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.06); },
   hatOpen:(t=now())=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=7000; const g=ctx.createGain(); g.gain.value=.3; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+.25); },
@@ -326,312 +256,36 @@ const S = {
   rim:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='square'; o.frequency.setValueAtTime(900,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.7,t+.005); g.gain.exponentialRampToValueAtTime(.0001,t+.08); o.connect(g).connect(master); o.start(t); o.stop(t+.1); },
   perc:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(400,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.8,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.12); o.connect(g).connect(master); o.start(t); o.stop(t+.18); },
   kick808:(t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(80,t); o.frequency.exponentialRampToValueAtTime(38,t+.28); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(1,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.6); o.connect(g).connect(master); o.start(t); o.stop(t+.75); },
+  handpanNote:(freq=220,t=now())=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=8;
+    o.type='sine'; o.frequency.setValueAtTime(freq,t); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.9,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.9);
+    o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+1.0); }
 };
 const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
 
-const SHAPE={circle:new Set(['crash','ride','hatClosed','hatOpen','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             hex:new Set(['tomHigh','tomLow','hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             tri:new Set(['perc','rim','clap']),
-             drum:new Set(['kick','kick808']),
-             rect:new Set(['snare','clap'])};
-const COLOR={kick:new Set(['kick','kick808']),
-             snare:new Set(['snare','clap']),
-             hats:new Set(['hatClosed','hatOpen']),
-             toms:new Set(['tomHigh','tomLow']),
-             cym:new Set(['crash','ride']),
-             hand:new Set(['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']),
-             fun:new Set(['perc','rim'])};
-function shapeClass(id){if(SHAPE.circle.has(id))return'shape-circle';if(SHAPE.hex.has(id))return'shape-hex';if(SHAPE.tri.has(id))return'shape-tri';if(SHAPE.drum.has(id))return'shape-drum';return'shape-rect';}
-function colorClass(id){if(COLOR.kick.has(id))return'c-kick';if(COLOR.snare.has(id))return'c-snare';if(COLOR.hats.has(id))return'c-hats';if(COLOR.toms.has(id))return'c-toms';if(COLOR.cym.has(id))return'c-cym';if(COLOR.hand.has(id))return'c-hand';if(COLOR.fun.has(id))return'c-fun';return'';}
-
+/* === Kits (bez trójkątów/hex) === */
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
-  "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
+  "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']
 };
+/* Kształt klasy: tylko round / oval / circle */
+function shapeClass(id){
+  if(/^hand\d$/.test(id)) return 'shape-oval';
+  if(id==='crash' || id==='ride' || id==='hatClosed' || id==='hatOpen') return 'shape-circle';
+  return 'shape-round';
+}
+function colorClass(id){
+  if(['kick','kick808'].includes(id)) return 'c-kick';
+  if(['snare','clap'].includes(id)) return 'c-snare';
+  if(['hatClosed','hatOpen'].includes(id)) return 'c-hats';
+  if(['tomHigh','tomLow'].includes(id)) return 'c-toms';
+  if(['crash','ride'].includes(id)) return 'c-cym';
+  if(/^hand\d$/.test(id)) return 'c-hand';
+  return 'c-fun';
+}
 
-/* ======= SCENA / LAYOUT ======= */
+/* === UI refs === */
 const stage=document.getElementById('stage');
-let currentKit=localStorage.getItem('kitName')||'Standard';
-let layoutMode=false;
-const positionsKey=()=> 'padPositions:'+currentKit;
-const layoutUseKey='useCanvasLayout';
-let useCanvasLayout = localStorage.getItem(layoutUseKey)==='1';
-
-let draftPositions=null;
-const layoutBar=document.getElementById('layoutBar');
-const layoutSave=document.getElementById('layoutSave');
-const layoutCancel=document.getElementById('layoutCancel');
-
-function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
-function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
-
-/* Domyślne pozycje (%) gdy włączony Canvas, a brak zapisanych */
-function defaultPositionsForKit(list){
-  const out={};
-  const cols=3, rows=Math.ceil(list.length/cols);
-  const cellW= (100-8)/cols;  // 2% marginesy
-  const cellH= (100-8)/Math.max(rows,2);
-  list.forEach((id,i)=>{
-    const c=i%cols, r=Math.floor(i/cols);
-    out[id]={left:2 + c*cellW, top:2 + r*cellH, w:cellW-2, h:cellH-4, rot:0, label:id.toUpperCase(), color:null, z:i+1};
-  });
-  return out;
-}
-
-function renderPads(){
-  const kitList = (KITS[currentKit]||[]).slice(0,12);
-  const saved = getSavedPositions();
-  const haveLayout = Object.keys(saved).length>0;
-  const playCanvas = (!layoutMode && useCanvasLayout) ? true : layoutMode; // wymuś Canvas gdy ON
-  stage.className = playCanvas ? 'canvas' : 'grid';
-  stage.innerHTML='';
-
-  const P = layoutMode ? (draftPositions||{}) : (haveLayout ? saved : defaultPositionsForKit(kitList));
-
-  if(stage.className==='grid'){
-    // Siatka klasyczna
-    kitList.forEach(id=>{
-      const el=document.createElement('div');
-      el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
-      el.dataset.sound=id;
-      el.textContent=(saved[id]?.label)||id.toUpperCase();
-      stage.appendChild(el);
-    });
-  }else{
-    // Canvas (pozycje w %)
-    kitList.forEach((id,idx)=>{
-      const cfg=P[id]||defaultPositionsForKit([id])[id];
-      const el=document.createElement('div');
-      el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
-      el.dataset.sound=id;
-      el.style.position='absolute';
-      el.style.left=(cfg.left??2)+'%';
-      el.style.top=(cfg.top??2)+'%';
-      el.style.width=(cfg.w??30)+'%';
-      el.style.height=(cfg.h??18)+'%';
-      el.style.transform=`rotate(${cfg.rot||0}deg)`;
-      el.style.zIndex=String(cfg.z||1);
-      if(cfg.color) el.style.background=cfg.color;
-      el.textContent=(cfg.label)||id.toUpperCase();
-
-      if(layoutMode){
-        el.addEventListener('pointerdown', (e)=>selectPad(el, e));
-        addHandles(el);
-        makeDraggable(el, true);
-      }else{
-        el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); padDown(el);},{passive:false});
-        el.addEventListener('touchstart',(e)=>{ padDown(el);},{passive:true});
-      }
-      stage.appendChild(el);
-    });
-  }
-
-  // pasek
-  layoutBar.style.display = layoutMode ? 'flex' : 'none';
-  document.getElementById('editPanel').style.display = (layoutMode && selectedPadEl)?'block':(layoutMode?'block':'none');
-
-  // Po przełączeniu z edycji do gry usuń uchwyty
-  if(!layoutMode){ clearSelectionAndHandles(); }
-}
-
-/* TRYB UKŁAD */
-function enterLayout(){
-  layoutMode=true;
-  draftPositions = structuredClone(getSavedPositions());
-  selectedPadEl = null;
-  renderPads();
-}
-function exitLayout(save){
-  if(save){ setSavedPositions(draftPositions); }
-  layoutMode=false; draftPositions=null; selectedPadEl=null;
-  clearSelectionAndHandles();
-  renderPads();
-}
-layoutSave.onclick = ()=> exitLayout(true);
-layoutCancel.onclick = ()=> exitLayout(false);
-
-/* GRANIE */
-function padDown(el){
-  const id = el.dataset.sound;
-  if(!ctx) initAudio();
-  if(!started || (ctx && (ctx.state==='suspended' || ctx.state==='interrupted'))) { startAudio(); }
-  S[id]?.();
-  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),120);
-}
-
-/* DRAG + SCALE + ROTATE */
-function stageRect(){ return stage.getBoundingClientRect(); }
-
-function makeDraggable(el){
-  let sx=0,sy=0,sl=0,st=0,drag=false;
-  const down=(ev)=>{ if(!layoutMode) return;
-    drag=true; el.classList.add('dragging');
-    const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
-    sl=((P.left-R.left)/R.width)*100; st=((P.top-R.top)/R.height)*100;
-    sx=ev.clientX||(ev.touches&&ev.touches[0].clientX); sy=ev.clientY||(ev.touches&&ev.touches[0].clientY);
-    addEventListener('pointermove',move); addEventListener('pointerup',up,{once:true});
-    addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up,{once:true});
-  };
-  const move=(ev)=>{ if(!drag) return; ev.preventDefault?.();
-    const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
-    const R=stage.getBoundingClientRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
-    const L=Math.min(98,Math.max(0,sl+dx)), T=Math.min(98,Math.max(0,st+dy));
-    el.style.left=L+'%'; el.style.top=T+'%';
-  };
-  const up=()=>{ drag=false; el.classList.remove('dragging');
-    removeEventListener('pointermove',move); removeEventListener('touchmove',move);
-    savePadRect(el);
-  };
-  el.addEventListener('pointerdown',down); el.addEventListener('touchstart',down,{passive:true});
-}
-
-function addHandles(el){
-  el.querySelectorAll('.handle').forEach(h=>h.remove());
-  ['nw','ne','sw','se','rot'].forEach(pos=>{
-    const h=document.createElement('div');
-    h.className='handle h-'+pos;
-    el.appendChild(h);
-    h.addEventListener('pointerdown',(e)=>startTransform(e, el, pos));
-    h.addEventListener('touchstart',(e)=>startTransform(e, el, pos),{passive:true});
-  });
-}
-
-let selectedPadEl=null;
-function selectPad(el, e){
-  e?.preventDefault?.();
-  selectedPadEl = el;
-  document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el));
-  updateEditPanelFromEl(el);
-}
-
-function startTransform(e, el, type){
-  if(!layoutMode) return;
-  e.preventDefault?.();
-  const R=stageRect(), P=el.getBoundingClientRect();
-  const start={
-    l:((P.left-R.left)/R.width)*100,
-    t:((P.top-R.top)/R.height)*100,
-    w:(P.width/R.width)*100,
-    h:(P.height/R.height)*100,
-    rot: getRotationFromTransform(el.style.transform)||0
-  };
-  const sx=e.clientX||(e.touches&&e.touches[0].clientX);
-  const sy=e.clientY||(e.touches&&e.touches[0].clientY);
-
-  const move=(ev)=>{
-    const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
-    const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
-    if(type==='rot'){
-      const cx = (el.getBoundingClientRect().left - R.left) + el.getBoundingClientRect().width/2;
-      const cy = (el.getBoundingClientRect().top - R.top) + el.getBoundingClientRect().height/2;
-      const ang = Math.atan2((y - (R.top+cy)), (x - (R.left+cx)));
-      const deg = Math.round((ang*180/Math.PI + 90));
-      el.style.transform=`rotate(${deg}deg)`;
-    }else{
-      let l=start.l, t=start.t, w=start.w, h=start.h;
-      if(type==='se'){ w = clampPc(start.w + dx); h = clampPc(start.h + dy); }
-      if(type==='ne'){ w = clampPc(start.w + dx); h = clampPc(start.h - dy); t = clampPc(start.t + dy); }
-      if(type==='sw'){ w = clampPc(start.w - dx); h = clampPc(start.h + dy); l = clampPc(start.l + dx); }
-      if(type==='nw'){ w = clampPc(start.w - dx); h = clampPc(start.h - dy); l = clampPc(start.l + dx); t = clampPc(start.t + dy); }
-      el.style.left=l+'%'; el.style.top=t+'%'; el.style.width=w+'%'; el.style.height=h+'%';
-    }
-    updateEditPanelFromEl(el,true);
-  };
-  const up=()=>{
-    removeEventListener('pointermove',move); removeEventListener('pointerup',up);
-    removeEventListener('touchmove',move); removeEventListener('touchend',up);
-    savePadRect(el);
-  };
-  addEventListener('pointermove',move); addEventListener('pointerup',up,{once:true});
-  addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up,{once:true});
-}
-function clampPc(v){ return Math.min(98, Math.max(2, v)); }
-function getRotationFromTransform(tr){
-  const m = /rotate\(([-\d.]+)deg\)/.exec(tr||''); return m? parseFloat(m[1]) : 0;
-}
-function savePadRect(el){
-  if(!draftPositions) draftPositions={};
-  const id=el.dataset.sound;
-  const R=stageRect(), P=el.getBoundingClientRect();
-  draftPositions[id] = Object.assign(draftPositions[id]||{}, {
-    left: ((P.left-R.left)/R.width)*100,
-    top:  ((P.top-R.top)/R.height)*100,
-    w:    (P.width/R.width)*100,
-    h:    (P.height/R.height)*100,
-    rot:  getRotationFromTransform(el.style.transform)||0,
-    label: el.textContent.trim(),
-    color: el.style.background||null,
-    z: parseInt(el.style.zIndex||'1',10)
-  });
-}
-
-/* EDIT PANEL */
-const editPanel = document.getElementById('editPanel');
-const epLabel = document.getElementById('epLabel');
-const inpLabel = document.getElementById('inpLabel');
-const btnColor = document.getElementById('btnColor');
-const inpColor = document.getElementById('inpColor');
-const btnFront = document.getElementById('btnFront');
-const btnBack = document.getElementById('btnBack');
-const btnDup = document.getElementById('btnDup');
-const btnDel = document.getElementById('btnDel');
-
-function updateEditPanelFromEl(el, live=false){
-  if(!layoutMode || !el){ editPanel.style.display='none'; return; }
-  editPanel.style.display='block';
-  const id = el.dataset.sound;
-  epLabel.textContent = id;
-  if(!live){
-    inpLabel.value = el.textContent.trim();
-    // kolor wejściowego pickera ustawiamy tylko gdy to kolor heks
-    const c = (el.style.background||'').trim();
-    if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) inpColor.value=c;
-  }
-}
-inpLabel.addEventListener('input', ()=>{
-  if(!selectedPadEl) return;
-  selectedPadEl.textContent = inpLabel.value.trim() || selectedPadEl.dataset.sound.toUpperCase();
-  savePadRect(selectedPadEl);
-});
-btnColor.addEventListener('click', ()=> inpColor.click());
-inpColor.addEventListener('input', ()=>{
-  if(!selectedPadEl) return;
-  selectedPadEl.style.background = inpColor.value;
-  savePadRect(selectedPadEl);
-});
-btnFront.addEventListener('click', ()=>{
-  if(!selectedPadEl) return;
-  selectedPadEl.style.zIndex = String(Date.now()%2147483647);
-  savePadRect(selectedPadEl);
-});
-btnBack.addEventListener('click', ()=>{
-  if(!selectedPadEl) return;
-  selectedPadEl.style.zIndex = '1';
-  savePadRect(selectedPadEl);
-});
-btnDup.addEventListener('click', ()=>{
-  if(!selectedPadEl) return;
-  const R=stageRect(), P=selectedPadEl.getBoundingClientRect();
-  const ghost = selectedPadEl.cloneNode(true);
-  const left=((P.left-R.left)/R.width)*100 + 4;
-  const top =((P.top -R.top )/R.height)*100 + 4;
-  ghost.style.left=left+'%'; ghost.style.top=top+'%';
-  ghost.style.zIndex = String(Date.now()%2147483647);
-  stage.appendChild(ghost);
-  addHandles(ghost); makeDraggable(ghost,true);
-});
-btnDel.addEventListener('click', ()=>{
-  if(!selectedPadEl) return;
-  const id = selectedPadEl.dataset.sound;
-  selectedPadEl.remove();
-  if(draftPositions && draftPositions[id]) delete draftPositions[id];
-  selectedPadEl=null;
-  editPanel.style.display='block';
-});
-
-/* MENU / TOGGLE / BPM */
 const menuBtn=document.getElementById('menuBtn');
-const hambit=document.getElementById('hambit');
 const menuPanel=document.getElementById('menuPanel');
 const menuOk=document.getElementById('menuOk');
 const menuCancel=document.getElementById('menuCancel');
@@ -643,85 +297,340 @@ const themeBtn=document.getElementById('themeBtn');
 const bpmEl=document.getElementById('bpm');
 const bpmVal=document.getElementById('bpmVal');
 const bpmTopVal=document.getElementById('bpmTopVal');
+const tapStart=document.getElementById('tapStart');
+const tapStartBtn=document.getElementById('tapStartBtn');
 
-function setToggle(btn, on){ btn.dataset.on = on ? '1':'0'; }
-function isOn(btn){ return btn.dataset.on === '1'; }
+/* === State === */
+let currentKit=localStorage.getItem('kitName')||'Standard';
+let layoutMode=false;
+const positionsKey=()=> 'padPositions:'+currentKit;
+const layoutUseKey='useCanvasLayout';
+let useCanvasLayout = localStorage.getItem(layoutUseKey)==='1';
+let draftPositions=null;
+let selectedPadEl=null;
 
-function fillKits(){
-  kitSelect.innerHTML='';
-  Object.keys(KITS).forEach(k=>{
-    const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o);
+function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
+function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
+
+/* Domyślny Canvas rozkład (%) gdy brak zapisanych */
+function defaultPositionsForKit(list){
+  const out={};
+  const cols=3, rows=Math.ceil(list.length/cols);
+  const cellW= (100-8)/cols, cellH= (100-8)/Math.max(rows,2);
+  list.forEach((id,i)=>{
+    const c=i%cols, r=Math.floor(i/cols);
+    out[id]={left:2 + c*cellW, top:2 + r*cellH, w:cellW-2, h:cellH-4, rot:0, label:id.toUpperCase(), color:null, z:i+1, shape: shapeClass(id), sound:null};
   });
+  return out;
 }
-function openMenu(){ fillKits(); applyUseBtn(); menuPanel.style.display='block'; menuPanel.setAttribute('aria-hidden','false'); document.body.classList.remove('chrome-hidden'); }
-function closeMenu(){ menuPanel.style.display='none'; menuPanel.setAttribute('aria-hidden','true'); }
-function hideChrome(){ document.body.classList.add('chrome-hidden'); }
-menuBtn.onclick = openMenu;
-hambit.onclick = openMenu;
-menuCancel.onclick = ()=>{ closeMenu(); hideChrome(); clearSelectionAndHandles(); renderPads(); };
-menuOk.onclick = ()=>{
-  const chosen = kitSelect.value;
-  if(chosen && chosen!==currentKit){ currentKit=chosen; localStorage.setItem('kitName', currentKit); }
-  // wyjście z ewentualnej edycji
-  if(layoutMode){ exitLayout(true); }
-  clearSelectionAndHandles();
-  renderPads();
-  closeMenu(); hideChrome();
-};
 
-layoutStart.onclick = ()=>{ closeMenu(); enterLayout(); };
-
-function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); setToggle(themeBtn, t==='neon'); }
-let theme = localStorage.getItem('theme') || 'dark';
-applyTheme(theme);
-themeBtn.onclick = ()=>{ theme = (theme==='neon'?'dark':'neon'); localStorage.setItem('theme', theme); applyTheme(theme); };
-
-/* Użyj mojego układu */
+function setToggle(btn,on){ btn.dataset.on = on?'1':'0'; }
 function applyUseBtn(){ setToggle(layoutUseBtn, useCanvasLayout); }
-layoutUseBtn.addEventListener('click', ()=>{
-  useCanvasLayout = !useCanvasLayout;
-  localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0');
-  applyUseBtn();
-  // jeśli wychodzimy z edycji, dopilnuj uchwytów
-  if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
-});
+function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); setToggle(themeBtn, t==='neon'); }
+let theme = localStorage.getItem('theme') || 'dark'; applyTheme(theme);
+themeBtn.onclick = ()=>{ theme=(theme==='neon'?'dark':'neon'); localStorage.setItem('theme',theme); applyTheme(theme); };
 
-/* Rozmiar */
-sizeEl.addEventListener('input',(e)=>{
-  const v = Number(e.target.value); const scale = v/100;
-  document.documentElement.style.setProperty('--size-min',  Math.round(84*scale)+'px');
-  document.documentElement.style.setProperty('--size-vw',   (28*scale)+'vw');
-  document.documentElement.style.setProperty('--size-max',  Math.round(160*scale)+'px');
-});
-
-/* BPM */
 function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=String(v); }
 bpmEl.addEventListener('input',(e)=> setBpmDisplay(e.target.value) );
 setBpmDisplay(bpmEl.value);
 
+/* Render */
+function renderPads(){
+  const list = (KITS[currentKit]||[]).slice(0,12);
+  const saved = getSavedPositions();
+  const playCanvas = (!layoutMode && useCanvasLayout) || layoutMode;
+  stage.className = playCanvas ? 'canvas' : 'grid';
+  stage.innerHTML='';
+
+  const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : defaultPositionsForKit(list));
+
+  if(!playCanvas){
+    list.forEach(id=>{
+      const el=document.createElement('div');
+      el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
+      el.dataset.sound=id;
+      el.textContent=(saved[id]?.label)||id.toUpperCase();
+      stage.appendChild(el);
+    });
+  }else{
+    list.forEach((id,idx)=>{
+      const def = defaultPositionsForKit([id])[id];
+      const cfg = P[id] ? {...def, ...P[id]} : def;
+      const el=document.createElement('div');
+      el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
+      el.dataset.sound=id;
+      el.style.left=(cfg.left??2)+'%';
+      el.style.top=(cfg.top??2)+'%';
+      el.style.width=(cfg.w??30)+'%';
+      el.style.height=(cfg.h??18)+'%';
+      el.style.transform=`rotate(${cfg.rot||0}deg)`;
+      el.style.zIndex=String(cfg.z||1);
+      if(cfg.color) el.style.background=cfg.color;
+      el.textContent=(cfg.label)||id.toUpperCase();
+
+      if(layoutMode){
+        el.addEventListener('pointerdown',(e)=>selectPad(el,e));
+        addHandles(el);
+        makeDraggable(el);
+      }else{
+        el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); padDown(el,cfg); },{passive:false});
+        el.addEventListener('touchstart',()=> padDown(el,cfg),{passive:true});
+      }
+      stage.appendChild(el);
+    });
+  }
+
+  layoutBar.style.display = layoutMode ? 'flex' : 'none';
+  document.getElementById('editPanel').style.display = layoutMode ? 'block':'none';
+  if(!layoutMode) clearSelectionAndHandles();
+}
+
+/* Play */
+async function padDown(el,cfg){
+  if(!ctx) initAudio();
+  if(!started || (ctx && ctx.state!=='running')) await startAudio();
+  const id = el.dataset.sound;
+
+  // Priorytet: przypisany dźwięk → synth/handpan
+  const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
+  if(sound){
+    try{
+      if(sound.type==='dataurl' || sound.type==='url'){
+        const resp = await fetch(sound.src); const arr = await resp.arrayBuffer();
+        const buf = await (ctx.decodeAudioData(arr.slice(0)));
+        const src = ctx.createBufferSource(); src.buffer = buf; const g=ctx.createGain(); g.gain.value=1.0; src.connect(g).connect(master); src.start();
+      }
+    }catch(e){ console.warn('Audio URL error',e); }
+  }else{
+    if(HAND[id]){ S.handpanNote(HAND[id]); } else { S[id]?.(); }
+  }
+
+  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),120);
+}
+
+/* Layout mode */
+const layoutBar=document.getElementById('layoutBar');
+const layoutSave=document.getElementById('layoutSave');
+const layoutCancel=document.getElementById('layoutCancel');
+
+function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
+function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; clearSelectionAndHandles(); renderPads(); }
+layoutSave.onclick = ()=> exitLayout(true);
+layoutCancel.onclick = ()=> exitLayout(false);
+
+/* Drag/Scale/Rotate */
+function stageRect(){ return stage.getBoundingClientRect(); }
+function getRotationFromTransform(tr){ const m=/rotate\(([-\d.]+)deg\)/.exec(tr||''); return m?parseFloat(m[1]):0; }
+function clampPc(v){ return Math.min(98, Math.max(2, v)); }
+
+function makeDraggable(el){
+  let sx=0,sy=0,sl=0,st=0,drag=false;
+  const down=(ev)=>{ if(!layoutMode) return;
+    drag=true; el.classList.add('dragging');
+    const R=stageRect(), P=el.getBoundingClientRect();
+    sl=((P.left-R.left)/R.width)*100; st=((P.top-R.top)/R.height)*100;
+    sx=ev.clientX||(ev.touches&&ev.touches[0].clientX); sy=ev.clientY||(ev.touches&&ev.touches[0].clientY);
+    addEventListener('pointermove',move); addEventListener('pointerup',up,{once:true});
+    addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up,{once:true});
+  };
+  const move=(ev)=>{ if(!drag) return; ev.preventDefault?.();
+    const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
+    const R=stageRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
+    el.style.left=clampPc(sl+dx)+'%'; el.style.top=clampPc(st+dy)+'%';
+    updateEditPanelFromEl(el,true);
+  };
+  const up=()=>{ drag=false; el.classList.remove('dragging');
+    removeEventListener('pointermove',move); removeEventListener('touchmove',move);
+    savePadRect(el);
+  };
+  el.addEventListener('pointerdown',down); el.addEventListener('touchstart',down,{passive:true});
+}
+
+function addHandles(el){
+  el.querySelectorAll('.handle').forEach(h=>h.remove());
+  ['nw','ne','sw','se','rot'].forEach(pos=>{
+    const h=document.createElement('div'); h.className='handle h-'+pos; el.appendChild(h);
+    h.addEventListener('pointerdown',(e)=>startTransform(e, el, pos));
+    h.addEventListener('touchstart',(e)=>startTransform(e, el, pos),{passive:true});
+  });
+}
+function startTransform(e, el, type){
+  if(!layoutMode) return; e.preventDefault?.();
+  const R=stageRect(), P=el.getBoundingClientRect();
+  const start={ l:((P.left-R.left)/R.width)*100, t:((P.top-R.top)/R.height)*100, w:(P.width/R.width)*100, h:(P.height/R.height)*100, rot:getRotationFromTransform(el.style.transform)||0 };
+  const sx=e.clientX||(e.touches&&e.touches[0].clientX); const sy=e.clientY||(e.touches&&e.touches[0].clientY);
+  const move=(ev)=>{
+    const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
+    const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
+    if(type==='rot'){
+      const b=el.getBoundingClientRect(); const cx=(b.left-R.left)+b.width/2, cy=(b.top-R.top)+b.height/2;
+      const ang=Math.atan2((y-(R.top+cy)),(x-(R.left+cx))); const deg=Math.round((ang*180/Math.PI+90));
+      el.style.transform=`rotate(${deg}deg)`;
+    }else{
+      let l=start.l, t=start.t, w=start.w, h=start.h;
+      if(type==='se'){ w=clampPc(start.w+dx); h=clampPc(start.h+dy); }
+      if(type==='ne'){ w=clampPc(start.w+dx); h=clampPc(start.h-dy); t=clampPc(start.t+dy); }
+      if(type==='sw'){ w=clampPc(start.w-dx); h=clampPc(start.h+dy); l=clampPc(start.l+dx); }
+      if(type==='nw'){ w=clampPc(start.w-dx); h=clampPc(start.h-dy); l=clampPc(start.l+dx); t=clampPc(start.t+dy); }
+      el.style.left=l+'%'; el.style.top=t+'%'; el.style.width=w+'%'; el.style.height=h+'%';
+    }
+    updateEditPanelFromEl(el,true);
+  };
+  const up=()=>{ removeEventListener('pointermove',move); removeEventListener('pointerup',up);
+    removeEventListener('touchmove',move); removeEventListener('touchend',up); savePadRect(el); };
+  addEventListener('pointermove',move); addEventListener('pointerup',up,{once:true});
+  addEventListener('touchmove',move,{passive:false}); addEventListener('touchend',up,{once:true});
+}
+
+function savePadRect(el){
+  if(!draftPositions) draftPositions={};
+  const id=el.dataset.sound; const R=stageRect(), P=el.getBoundingClientRect();
+  draftPositions[id] = Object.assign(draftPositions[id]||{}, {
+    left:((P.left-R.left)/R.width)*100, top:((P.top-R.top)/R.height)*100,
+    w:(P.width/R.width)*100, h:(P.height/R.height)*100,
+    rot:getRotationFromTransform(el.style.transform)||0,
+    label: el.textContent.trim(),
+    color: el.style.background||null,
+    shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || 'round',
+    z: parseInt(el.style.zIndex||'1',10)
+  });
+}
+
+/* Edit panel */
+const editPanel=document.getElementById('editPanel');
+const epLabel=document.getElementById('epLabel');
+const inpLabel=document.getElementById('inpLabel');
+const btnColor=document.getElementById('btnColor');
+const inpColor=document.getElementById('inpColor');
+const selShape=document.getElementById('selShape');
+const btnFront=document.getElementById('btnFront');
+const btnBack=document.getElementById('btnBack');
+const btnDup=document.getElementById('btnDup');
+const btnDel=document.getElementById('btnDel');
+const btnSoundFile=document.getElementById('btnSoundFile');
+const inpSoundFile=document.getElementById('inpSoundFile');
+const btnSoundUrl=document.getElementById('btnSoundUrl');
+const btnClrSound=document.getElementById('btnClrSound');
+
+function updateEditPanelFromEl(el,live=false){
+  if(!layoutMode || !el){ editPanel.style.display='none'; return; }
+  editPanel.style.display='block';
+  const id = el.dataset.sound;
+  epLabel.textContent = id;
+  if(!live){
+    inpLabel.value = el.textContent.trim();
+    const shape = [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || 'round';
+    selShape.value = shape==='round'?'round':(shape==='circle'?'circle':'oval');
+    const c=(el.style.background||'').trim(); if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) inpColor.value=c;
+  }
+}
+function currentCfgId(){ return selectedPadEl?.dataset.sound; }
+
+inpLabel.addEventListener('input', ()=>{
+  if(!selectedPadEl) return;
+  selectedPadEl.textContent = inpLabel.value.trim() || selectedPadEl.dataset.sound.toUpperCase();
+  savePadRect(selectedPadEl);
+});
+btnColor.addEventListener('click', ()=> inpColor.click());
+inpColor.addEventListener('input', ()=>{
+  if(!selectedPadEl) return;
+  selectedPadEl.style.background = inpColor.value; savePadRect(selectedPadEl);
+});
+selShape.addEventListener('change', ()=>{
+  if(!selectedPadEl) return;
+  ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c));
+  selectedPadEl.classList.add('shape-'+selShape.value);
+  savePadRect(selectedPadEl);
+});
+btnFront.addEventListener('click', ()=>{
+  if(!selectedPadEl) return; selectedPadEl.style.zIndex=String(Date.now()%2147483647); savePadRect(selectedPadEl);
+});
+btnBack.addEventListener('click', ()=>{
+  if(!selectedPadEl) return; selectedPadEl.style.zIndex='1'; savePadRect(selectedPadEl);
+});
+btnDup.addEventListener('click', ()=>{
+  if(!selectedPadEl) return;
+  const R=stageRect(), P=selectedPadEl.getBoundingClientRect();
+  const ghost=selectedPadEl.cloneNode(true);
+  ghost.style.left=(((P.left-R.left)/R.width)*100+4)+'%';
+  ghost.style.top =(((P.top -R.top )/R.height)*100+4)+'%';
+  ghost.style.zIndex=String(Date.now()%2147483647);
+  stage.appendChild(ghost); addHandles(ghost); makeDraggable(ghost);
+});
+btnDel.addEventListener('click', ()=>{
+  if(!selectedPadEl) return;
+  const id = selectedPadEl.dataset.sound; selectedPadEl.remove();
+  if(draftPositions && draftPositions[id]) delete draftPositions[id];
+  selectedPadEl=null;
+});
+
+/* Sound assign */
+btnSoundFile.addEventListener('click', ()=> inpSoundFile.click());
+inpSoundFile.addEventListener('change', async ()=>{
+  if(!selectedPadEl || !inpSoundFile.files[0]) return;
+  const f = inpSoundFile.files[0]; const data = await f.arrayBuffer();
+  const b64 = await new Promise((res)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(new Blob([data])); });
+  applyPadSound({type:'dataurl', src:String(b64)});
+  inpSoundFile.value='';
+});
+btnSoundUrl.addEventListener('click', ()=>{
+  if(!selectedPadEl) return;
+  const url = prompt('Wklej URL do pliku audio:\n(np. https://raw.githubusercontent.com/<user>/<repo>/main/sounds/kick.wav)');
+  if(!url) return;
+  applyPadSound({type:'url', src:url.trim()});
+});
+btnClrSound.addEventListener('click', ()=>{
+  const id=currentCfgId(); if(!id||!draftPositions) return;
+  if(!draftPositions[id]) draftPositions[id]={};
+  draftPositions[id].sound=null; alert('Usunięto przypisanie dźwięku dla pada '+id+'. Zapisz układ, aby zachować.');
+});
+function applyPadSound(obj){
+  const id=currentCfgId(); if(!id) return;
+  if(!draftPositions) draftPositions={};
+  if(!draftPositions[id]) draftPositions[id]={};
+  draftPositions[id].sound=obj;
+  alert('Dźwięk przypisany. Zapisz układ, aby zachować.');
+}
+
+/* Select & clear */
+function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
+  document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); updateEditPanelFromEl(el); }
+function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
+  document.querySelectorAll('.pad .handle').forEach(h=>h.remove()); document.getElementById('editPanel').style.display='none'; selectedPadEl=null; }
+
+/* Menu */
+function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
+function openMenu(){ fillKits(); applyUseBtn(); menuPanel.style.display='block'; }
+function closeMenu(){ menuPanel.style.display='none'; }
+menuBtn.onclick=openMenu;
+menuCancel.onclick=()=>{ closeMenu(); clearSelectionAndHandles(); renderPads(); };
+menuOk.onclick=()=>{
+  const chosen=kitSelect.value; if(chosen && chosen!==currentKit){ currentKit=chosen; localStorage.setItem('kitName',currentKit); }
+  if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
+  closeMenu();
+};
+layoutStart.onclick=()=>{ closeMenu(); enterLayout(); };
+layoutUseBtn.addEventListener('click', ()=>{
+  useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); applyUseBtn();
+  if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
+});
+
+/* Size & Volume */
+sizeEl.addEventListener('input',(e)=>{
+  const v = Number(e.target.value); const scale=v/100;
+  document.documentElement.style.setProperty('--size-min',  Math.round(84*scale)+'px');
+  document.documentElement.style.setProperty('--size-vw',   (28*scale)+'vw');
+  document.documentElement.style.setProperty('--size-max',  Math.round(160*scale)+'px');
+});
+vol.addEventListener('input',()=>{ if(volumeNode) volumeNode.gain.value=parseFloat(vol.value); });
+
 /* Start overlay */
-const tapStart=document.getElementById('tapStart');
-const tapStartBtn=document.getElementById('tapStartBtn');
 ['click','touchstart'].forEach(ev=> tapStartBtn.addEventListener(ev,()=>startAudio(),{passive:true}) );
 
-/* Narzędzia */
-function clearSelectionAndHandles(){
-  document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
-  document.querySelectorAll('.pad .handle').forEach(h=>h.remove());
-  editPanel.style.display='none';
-  selectedPadEl=null;
-}
-
-/* START – respektuj „Użyj mojego układu” już na starcie */
-function initialRender(){
-  applyUseBtn(); // odśwież stan przycisku
-  renderPads();  // jeśli ON → Canvas od razu; jeśli brak pozycji → defaultPositionsForKit
-  tapStart.style.display='flex';
-}
+/* Init */
+function initialRender(){ applyUseBtn(); renderPads(); tapStart.style.display='flex'; }
 window.addEventListener('load', initialRender);
-
-/* PWA SW */
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') ensureRunning(); });
 </script>
 </body>
 </html>
