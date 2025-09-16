@@ -40,7 +40,6 @@ body,#app{min-height:100svh}
 input[type="number"]{cursor:text}
 .btn:active{transform:scale(.98)}
 .btn.ghost{background:transparent}
-.btn.danger{background:#301919;border-color:#7a2f2f}
 .btn.primary{background:#142231;border-color:#356a92}
 .btn.toggle{position:relative}
 .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 0 3px rgba(74,163,255,.13)}
@@ -64,7 +63,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .canvas{position:relative}
 .canvas .pad{position:absolute;touch-action:none}
 
-/* Pads (pełne kształty) */
+/* Pads */
 .pad{
   background:var(--pad);border:1px solid #2b3138;border-radius:2rem;
   display:flex;align-items:center;justify-content:center;text-align:center;
@@ -197,7 +196,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
     </div>
   </div>
 
-  <!-- Panel edycji pada (na żądanie) -->
+  <!-- Panel edycji pada -->
   <div id="editPanel">
     <div class="row">
       <span class="badge">Pad:</span>
@@ -243,7 +242,7 @@ function initAudio(){ if(ctx) return;
   const AC=window.AudioContext||window.webkitAudioContext;
   ctx=new AC({latencyHint:'interactive'});
   master=ctx.createGain(); volumeNode=ctx.createGain();
-  (master.connect(volumeNode)).connect(ctx.destination);
+  master.connect(volumeNode); volumeNode.connect(ctx.destination);
   volumeNode.gain.value=parseFloat(vol.value);
   try{ const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02); }catch{}
 }
@@ -302,11 +301,7 @@ const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
   "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']
 };
-function shapeClass(id){
-  if(/^hand\d$/.test(id)) return 'shape-oval';
-  if(id==='crash' || id==='ride' || id==='hatClosed' || id==='hatOpen') return 'shape-circle';
-  return 'shape-round';
-}
+function shapeClass(id){ if(/^hand\d$/.test(id)) return 'shape-oval'; if(['crash','ride','hatClosed','hatOpen'].includes(id)) return 'shape-circle'; return 'shape-round'; }
 function colorClass(id){
   if(['kick','kick808'].includes(id)) return 'c-kick';
   if(['snare','clap'].includes(id)) return 'c-snare';
@@ -344,7 +339,7 @@ let selectedPadEl=null;
 let editPanelVisible=false;
 
 /* Helpers */
-function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
+function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 function defaultPositionsForKit(list){
   const out={}; const cols=3, rows=Math.ceil(list.length/cols);
@@ -362,6 +357,33 @@ function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=S
 bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
 
+/* --- NOWY helper: aktualizacja panelu i draftu podczas ruchu --- */
+function updateEditPanelFromEl(el, liveOnly=false){
+  if(!el) return;
+  const id = el.dataset.sound;
+  // odśwież panel „Cechy…”, jeśli otwarty i dotyczy tego pada
+  if(editPanelVisible && selectedPadEl===el){
+    epLabel.textContent = id.toUpperCase();
+    // pozycje mogły się zmienić — nie pokazujemy liczb, ale przepisujemy do draftu
+  }
+  // zapis geometryczny do draftu (live)
+  if(liveOnly){
+    if(!draftPositions) draftPositions={};
+    const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
+    const prev = draftPositions[id]||{};
+    draftPositions[id] = Object.assign(prev, {
+      left:((P.left-R.left)/R.width)*100, top:((P.top-R.top)/R.height)*100,
+      w:(P.width/R.width)*100, h:(P.height/R.height)*100,
+      rot:(/rotate\(([-\d.]+)deg\)/.exec(el.style.transform||'')?.[1]*1)||0,
+      label: el.textContent.replace('⚙️','').trim(),
+      color: el.style.background||prev.color||null,
+      shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
+      z: parseInt(el.style.zIndex||prev.z||'1',10),
+      par: prev.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}
+    });
+  }
+}
+
 /* Render */
 function renderPads(){
   const list=(KITS[currentKit]||[]).slice(0,12);
@@ -373,7 +395,7 @@ function renderPads(){
   const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : defaultPositionsForKit(list));
 
   if(!playCanvas){
-    // GRID (gra!)
+    // GRID
     list.forEach(id=>{
       const el=document.createElement('div');
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
@@ -424,7 +446,7 @@ function renderPads(){
   }
 
   layoutBar.style.display = layoutMode ? 'flex' : 'none';
-  document.getElementById('editPanel').style.display = (layoutMode && editPanelVisible)?'block':'none';
+  editPanel.style.display = (layoutMode && editPanelVisible)?'block':'none';
   if(!layoutMode) clearSelectionAndHandles();
 }
 
@@ -460,7 +482,6 @@ async function padDown(el,cfg){
 const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
-const layoutProps=document.getElementById('layoutProps');
 
 function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
 function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; hideEditPanel(); clearSelectionAndHandles(); renderPads(); }
@@ -487,7 +508,6 @@ function makeDraggable(el){
     const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
     const R=stageRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
     el.style.left=clampPc(sl+dx)+'%'; el.style.top=clampPc(st+dy)+'%';
-    // podgląd wartości w panelu
     updateEditPanelFromEl(el,true);
   };
   const up=()=>{ drag=false; el.classList.remove('dragging');
@@ -601,11 +621,7 @@ inpLabel.addEventListener('input', ()=>{
 });
 btnColor.addEventListener('click', ()=> inpColor.click());
 inpColor.addEventListener('input', ()=>{ if(!selectedPadEl) return; selectedPadEl.style.background=inpColor.value; savePadRect(selectedPadEl); });
-
-selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return;
-  ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c));
-  selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl);
-});
+selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return; ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c)); selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl); });
 
 /* Audio assign */
 btnSoundFile.addEventListener('click', ()=> inpSoundFile.click());
@@ -697,11 +713,11 @@ function metroTick(){
 /* Init + pierwszy gest */
 function initialRender(){ applyUseBtn(); renderPads(); }
 window.addEventListener('load', initialRender);
-function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture, {once:true}); window.removeEventListener('keydown', firstGesture, {once:true}); }
+function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); }
 window.addEventListener('pointerdown', firstGesture, {once:true});
 window.addEventListener('keydown', firstGesture, {once:true});
 
-/* Service Worker */
+/* Service Worker (opcjonalnie) */
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 </script>
 </body>
