@@ -1,5 +1,5 @@
-// sw.js — v6
-const CACHE = 'drums-cache-v10';
+// sw.js — v7
+const CACHE = 'drums-cache-v11';
 const ASSETS = [
   './',
   './drums.html',
