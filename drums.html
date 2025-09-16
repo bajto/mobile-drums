@@ -86,7 +86,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   border:1px solid var(--btn-br); background:var(--btn-bg); align-items:center; justify-content:center; font-size:14px; line-height:1}
 .pad.selected .gear{display:flex}
 
-/* Kolory (delikatne gradienty) */
+/* Kolory */
 .c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%)}
 .c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%)}
 .c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%)}
@@ -246,8 +246,17 @@ function initAudio(){ if(ctx) return;
   volumeNode.gain.value=parseFloat(vol.value);
   try{ const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02); }catch{}
 }
-async function ensureRunning(){ if(!ctx) initAudio(); if(ctx.state!=='running'){ try{ await ctx.resume(); }catch{} } return ctx.state==='running'; }
-async function startAudio(){ initAudio(); const ok=await ensureRunning(); started=ok||started; }
+function resumeWithRace(){
+  if(!ctx) initAudio();
+  if(ctx.state==='running') return Promise.resolve(true);
+  let done=false;
+  const guard = new Promise(res=>setTimeout(()=>{ if(!done) res(false); },120));
+  const tryResume = ctx.resume().then(()=>true).catch(()=>false);
+  return Promise.race([tryResume, guard]).then(v=>{ done=true; return v; });
+}
+async function ensureRunning(){ if(!ctx) initAudio(); const ok = await resumeWithRace(); return ok || ctx.state==='running'; }
+function startAudio(){ initAudio(); // bez await!
+  resumeWithRace().then(ok=>{ started = ok || started; }); }
 const now=()=>ctx?ctx.currentTime:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
@@ -357,16 +366,13 @@ function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=S
 bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
 
-/* --- NOWY helper: aktualizacja panelu i draftu podczas ruchu --- */
+/* --- helper dla panelu i draftu podczas ruchu --- */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
-  // odśwież panel „Cechy…”, jeśli otwarty i dotyczy tego pada
   if(editPanelVisible && selectedPadEl===el){
     epLabel.textContent = id.toUpperCase();
-    // pozycje mogły się zmienić — nie pokazujemy liczb, ale przepisujemy do draftu
   }
-  // zapis geometryczny do draftu (live)
   if(liveOnly){
     if(!draftPositions) draftPositions={};
     const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
@@ -401,8 +407,13 @@ function renderPads(){
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
       el.textContent=(saved[id]?.label)||id.toUpperCase();
-      el.addEventListener('pointerdown', async (e)=>{ e.preventDefault(); await startAudio(); padDown(el,(saved[id]||{})); },{passive:false});
-      el.addEventListener('touchstart', async ()=>{ await startAudio(); padDown(el,(saved[id]||{})); },{passive:true});
+
+      const down = (e)=>{ e.preventDefault?.(); startAudio(); padDown(el,(saved[id]||{})); };
+      el.addEventListener('pointerdown', down, {passive:false});
+      el.addEventListener('touchstart', down, {passive:false});
+      el.addEventListener('pointerup', ()=>el.classList.remove('active'));
+      el.addEventListener('pointercancel', ()=>el.classList.remove('active'));
+
       stage.appendChild(el);
     });
   }else{
@@ -438,8 +449,11 @@ function renderPads(){
         el.addEventListener('pointercancel', lpCancel);
         el.addEventListener('pointermove', lpCancel);
       }else{
-        el.addEventListener('pointerdown', async (e)=>{ e.preventDefault(); await startAudio(); padDown(el,cfg); },{passive:false});
-        el.addEventListener('touchstart', async ()=>{ await startAudio(); padDown(el,cfg); },{passive:true});
+        const down = (e)=>{ e.preventDefault?.(); startAudio(); padDown(el,cfg); };
+        el.addEventListener('pointerdown', down, {passive:false});
+        el.addEventListener('touchstart', down, {passive:false});
+        el.addEventListener('pointerup', ()=>el.classList.remove('active'));
+        el.addEventListener('pointercancel', ()=>el.classList.remove('active'));
       }
       stage.appendChild(el);
     });
@@ -451,37 +465,39 @@ function renderPads(){
 }
 
 /* Play */
-async function padDown(el,cfg){
+function padDown(el,cfg){
   if(!ctx) initAudio();
-  if(!started || (ctx && ctx.state!=='running')) await startAudio();
   const id=el.dataset.sound;
   const par=cfg?.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0};
 
   const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
   if(sound){
-    try{
-      const resp=await fetch(sound.src,{mode:'cors'}); const arr=await resp.arrayBuffer();
-      const buf=await ctx.decodeAudioData(arr.slice(0));
-      const src=ctx.createBufferSource(); src.buffer=buf;
-      src.playbackRate.value=Math.pow(2,(par.semi||0)/12);
-      const g=ctx.createGain(); const t=now(), atk=Math.max(0.001,par.atk||0.01), dec=Math.max(0.01,par.dec||0.2);
-      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002,(par.gain||1)), t+atk); g.gain.exponentialRampToValueAtTime(0.0001, t+atk+dec);
-      if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=par.pan||0; src.connect(g).connect(p).connect(master); }
-      else { src.connect(g).connect(master); }
-      src.start(t);
-    }catch(e){ console.warn('Audio URL error',e); }
+    (async ()=>{
+      try{
+        const resp=await fetch(sound.src,{mode:'cors'}); const arr=await resp.arrayBuffer();
+        const buf=await ctx.decodeAudioData(arr.slice(0));
+        const src=ctx.createBufferSource(); src.buffer=buf;
+        src.playbackRate.value=Math.pow(2,(par.semi||0)/12);
+        const g=ctx.createGain(); const t=now(), atk=Math.max(0.001,par.atk||0.01), dec=Math.max(0.01,par.dec||0.2);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002,(par.gain||1)), t+atk); g.gain.exponentialRampToValueAtTime(0.0001, t+atk+dec);
+        if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=par.pan||0; src.connect(g).connect(p).connect(master); }
+        else { src.connect(g).connect(master); }
+        src.start(t);
+      }catch(e){ console.warn('Audio URL error',e); }
+    })();
   }else{
     if(HAND[id]) S.handpanNote(HAND[id], now(), par);
     else S[id]?.(now(), par);
   }
 
-  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),120);
+  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
 }
 
 /* Layout mode */
 const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
+const layoutProps=document.getElementById('layoutProps');
 
 function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
 function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; hideEditPanel(); clearSelectionAndHandles(); renderPads(); }
@@ -687,11 +703,11 @@ vol.addEventListener('input',()=>{ if(!volumeNode) return; volumeNode.gain.value
 /* === METRONOM === */
 let metroOn=false, metroTimer=null;
 const metroBtn=document.getElementById('metroBtn');
-metroBtn.addEventListener('click', async ()=>{
+metroBtn.addEventListener('click', ()=>{
   const on=metroBtn.dataset.on==='1';
   setToggle(metroBtn, !on);
   metroOn=!on;
-  await startAudio();
+  startAudio();
   if(metroOn){ startMetro(); } else { stopMetro(); }
 });
 function startMetro(){ if(!ctx) initAudio(); scheduleMetro(); }
