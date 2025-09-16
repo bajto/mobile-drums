@@ -497,7 +497,6 @@ function padDown(el,cfg){
 const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
-const layoutProps=document.getElementById('layoutProps');
 
 function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
 function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; hideEditPanel(); clearSelectionAndHandles(); renderPads(); }
@@ -738,3 +737,4 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
+
