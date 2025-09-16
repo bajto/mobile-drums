@@ -31,13 +31,12 @@ body,#app{min-height:100svh}
 .badge{font-size:.85rem;color:var(--muted);padding:.1rem .4rem;border:1px solid var(--btn-br);border-radius:.5rem;background:#0e1116}
 
 /* Buttons */
-.btn, select, input[type="text"], input[type="number"]{
+.btn, select, input[type="text"]{
   appearance:none;cursor:pointer;font-weight:700;color:var(--text);
   background:var(--btn-bg);border:1px solid var(--btn-br);border-radius:.8rem;
   padding:.5rem .8rem;display:inline-flex;align-items:center;gap:.45rem;
   box-shadow:0 0 0 1px rgba(255,255,255,.02) inset, 0 4px 16px rgba(0,0,0,.32);
 }
-input[type="number"]{cursor:text}
 .btn:active{transform:scale(.98)}
 .btn.ghost{background:transparent}
 .btn.primary{background:#142231;border-color:#356a92}
@@ -49,7 +48,7 @@ body.theme-neon{
   --pad:#0b1020; --pad-active:#111a33; --accent:#00e5ff;
   --btn-bg:#0a1121; --btn-br:#123154; --btn-glow:rgba(0,229,255,.45);
 }
-body.theme-neon .btn, body.theme-neon select, body.theme-neon input[type="text"], body.theme-neon input[type="number"]{
+body.theme-neon .btn, body.theme-neon select{
   box-shadow:0 0 10px var(--btn-glow), 0 8px 24px rgba(0,0,0,.35), inset 0 2px 0 rgba(0,0,0,.55);
   text-shadow:0 0 6px rgba(0,229,255,.25);
 }
@@ -219,44 +218,41 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
       <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
     </div>
 
+    <!-- NOWY panel parametrów: suwaki + live preview -->
     <div class="row">
-  <span class="badge">Parametry:</span>
-  <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
-    <label class="btn" style="justify-content:space-between;gap:1rem">
-      Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span>
-    </label>
-    <input id="rGain" type="range" min="0" max="2" step="0.01" value="1">
+      <span class="badge">Parametry:</span>
+      <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
+        <label class="btn" style="justify-content:space-between;gap:1rem">
+          Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span>
+        </label>
+        <input id="rGain" type="range" min="0" max="2" step="0.01" value="1">
 
-    <label class="btn" style="justify-content:space-between;gap:1rem">
-      Semi&nbsp;<span id="lblSemi">0</span>
-    </label>
-    <input id="rSemi" type="range" min="-24" max="24" step="1" value="0">
+        <label class="btn" style="justify-content:space-between;gap:1rem">
+          Semi&nbsp;<span id="lblSemi">0</span>
+        </label>
+        <input id="rSemi" type="range" min="-24" max="24" step="1" value="0">
 
-    <label class="btn" style="justify-content:space-between;gap:1rem">
-      Atak&nbsp;<span id="lblAtk">0.01 s</span>
-    </label>
-    <input id="rAtk" type="range" min="0" max="1.5" step="0.01" value="0.01">
+        <label class="btn" style="justify-content:space-between;gap:1rem">
+          Atak&nbsp;<span id="lblAtk">0.01 s</span>
+        </label>
+        <input id="rAtk" type="range" min="0" max="1.5" step="0.01" value="0.01">
 
-    <label class="btn" style="justify-content:space-between;gap:1rem">
-      Zanik&nbsp;<span id="lblDec">0.20 s</span>
-    </label>
-    <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.2">
+        <label class="btn" style="justify-content:space-between;gap:1rem">
+          Zanik&nbsp;<span id="lblDec">0.20 s</span>
+        </label>
+        <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.2">
 
-    <label class="btn" style="justify-content:space-between;gap:1rem">
-      Pan&nbsp;<span id="lblPan">0.0</span>
-    </label>
-    <input id="rPan" type="range" min="-1" max="1" step="0.1" value="0">
-  </div>
-</div>
+        <label class="btn" style="justify-content:space-between;gap:1rem">
+          Pan&nbsp;<span id="lblPan">0.0</span>
+        </label>
+        <input id="rPan" type="range" min="-1" max="1" step="0.1" value="0">
+      </div>
+    </div>
 
-<div class="row" style="margin-top:.2rem">
-  <label class="btn toggle" id="liveToggle" data-on="1">Odsłuch LIVE</label>
-  <button id="btnTest" class="btn">Test</button>
-  <button id="btnResetPar" class="btn ghost">Reset parametrów</button>
-</div>
-
-
-    <div class="row" style="margin-top:.4rem">
+    <div class="row" style="margin-top:.2rem">
+      <label class="btn toggle" id="liveToggle" data-on="1">Odsłuch LIVE</label>
+      <button id="btnTest" class="btn">Test</button>
+      <button id="btnResetPar" class="btn ghost">Reset parametrów</button>
       <button id="btnEPOk" class="btn primary">OK</button>
     </div>
   </div>
@@ -282,9 +278,7 @@ function resumeWithRace(){
   const tryResume = ctx.resume().then(()=>true).catch(()=>false);
   return Promise.race([tryResume, guard]).then(v=>{ done=true; return v; });
 }
-async function ensureRunning(){ if(!ctx) initAudio(); const ok = await resumeWithRace(); return ok || ctx.state==='running'; }
-function startAudio(){ initAudio(); // bez await!
-  resumeWithRace().then(ok=>{ started = ok || started; }); }
+function startAudio(){ initAudio(); resumeWithRace().then(ok=>{ started = ok || started; }); }
 const now=()=>ctx?ctx.currentTime:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
@@ -320,7 +314,7 @@ const S={
     o.connect(g).connect(master); o.start(t); o.stop(t+Math.max(.1,(par.dec||.1))); },
   perc:(t=now(),par={})=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='triangle';
     const f=400*Math.pow(2,(par.semi||0)/12); o.frequency.setValueAtTime(f,t);
-    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(par.gain??.8,t+(par.atk||.01)); g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.12,(par.dec||.12)));
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(par.gain??.8,t+(par.atk||.01)); g.gain.exponentialRampToValueAtTime(0.0001,t+Math.max(.12,(par.dec||.12)));
     o.connect(g).connect(master); o.start(t); o.stop(t+Math.max(.18,(par.dec||.18))); },
   kick808:(t=now(),par={})=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine';
     const startF=80*Math.pow(2,(par.semi||0)/12); o.frequency.setValueAtTime(startF,t); o.frequency.exponentialRampToValueAtTime(38,t+Math.max(.28,(par.dec||.28)));
@@ -332,11 +326,16 @@ const S={
     o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+Math.max(1.0,(par.dec||1.0))); }
 };
 const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
+const XYL = {
+  xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46,
+  xylG5:783.99, xylA5:880.00, xylB5:987.77, xylC6:1046.50
+};
 
 /* === Kits === */
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
-  "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9']
+  "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
+  "Cymbałki": ['xylC5','xylD5','xylE5','xylF5','xylG5','xylA5','xylB5','xylC6']
 };
 function shapeClass(id){ if(/^hand\d$/.test(id)) return 'shape-oval'; if(['crash','ride','hatClosed','hatOpen'].includes(id)) return 'shape-circle'; return 'shape-round'; }
 function colorClass(id){
@@ -344,7 +343,7 @@ function colorClass(id){
   if(['snare','clap'].includes(id)) return 'c-snare';
   if(['hatClosed','hatOpen'].includes(id)) return 'c-hats';
   if(['tomHigh','tomLow'].includes(id)) return 'c-toms';
-  if(['crash','ride'].includes(id)) return 'c-cym';
+  if(['crash','ride'].includes(id) || /^xyl/.test(id)) return 'c-cym';
   if(/^hand\d$/.test(id)) return 'c-hand';
   return 'c-fun';
 }
@@ -394,13 +393,51 @@ function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=S
 bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
 
+/* Panel LIVE – referencje i utils */
+const editPanel=document.getElementById('editPanel');
+const epLabel=document.getElementById('epLabel');
+const inpLabel=document.getElementById('inpLabel');
+const btnColor=document.getElementById('btnColor');
+const inpColor=document.getElementById('inpColor');
+const selShape=document.getElementById('selShape');
+const btnEPOk=document.getElementById('btnEPOk');
+const btnSoundFile=document.getElementById('btnSoundFile');
+const inpSoundFile=document.getElementById('inpSoundFile');
+const btnSoundUrl=document.getElementById('btnSoundUrl');
+const btnClrSound=document.getElementById('btnClrSound');
+
+const rGain=document.getElementById('rGain');
+const rSemi=document.getElementById('rSemi');
+const rAtk=document.getElementById('rAtk');
+const rDec=document.getElementById('rDec');
+const rPan=document.getElementById('rPan');
+const lblGain=document.getElementById('lblGain');
+const lblSemi=document.getElementById('lblSemi');
+const lblAtk=document.getElementById('lblAtk');
+const lblDec=document.getElementById('lblDec');
+const lblPan=document.getElementById('lblPan');
+const liveToggle=document.getElementById('liveToggle');
+const btnTest=document.getElementById('btnTest');
+const btnResetPar=document.getElementById('btnResetPar');
+
+let livePreviewOn = true;
+let previewTimer = null;
+function fmtDbFromGain(g){ if(g<=0) return '-∞ dB'; const db=20*Math.log10(g); const v=(Math.round(db*10)/10).toFixed(1); return (db>0?`+${v}`:v)+' dB'; }
+function updateValueLabels(){
+  const g=parseFloat(rGain.value);
+  lblGain.textContent=`${g.toFixed(2)} (${fmtDbFromGain(g)})`;
+  lblSemi.textContent=`${parseInt(rSemi.value,10)}`;
+  lblAtk.textContent =`${parseFloat(rAtk.value).toFixed(2)} s`;
+  lblDec.textContent =`${parseFloat(rDec.value).toFixed(2)} s`;
+  lblPan.textContent =`${parseFloat(rPan.value).toFixed(1)}`;
+}
+function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
+
 /* --- helper dla panelu i draftu podczas ruchu --- */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
-  if(editPanelVisible && selectedPadEl===el){
-    epLabel.textContent = id.toUpperCase();
-  }
+  if(editPanelVisible && selectedPadEl===el){ epLabel.textContent = id.toUpperCase(); }
   if(liveOnly){
     if(!draftPositions) draftPositions={};
     const R=stage.getBoundingClientRect(), P=el.getBoundingClientRect();
@@ -413,7 +450,7 @@ function updateEditPanelFromEl(el, liveOnly=false){
       color: el.style.background||prev.color||null,
       shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
       z: parseInt(el.style.zIndex||prev.z||'1',10),
-      par: prev.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}
+      par: prev.par || defaultPar()
     });
   }
 }
@@ -496,7 +533,7 @@ function renderPads(){
 function padDown(el,cfg){
   if(!ctx) initAudio();
   const id=el.dataset.sound;
-  const par=cfg?.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0};
+  const par=cfg?.par || defaultPar();
 
   const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
   if(sound){
@@ -514,8 +551,9 @@ function padDown(el,cfg){
       }catch(e){ console.warn('Audio URL error',e); }
     })();
   }else{
-    if(HAND[id]) S.handpanNote(HAND[id], now(), par);
-    else S[id]?.(now(), par);
+    if(HAND[id])      S.handpanNote(HAND[id], now(), par);
+    else if(XYL[id])  S.handpanNote(XYL[id],  now(), par);
+    else              S[id]?.(now(), par);
   }
 
   el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
@@ -608,28 +646,11 @@ function savePadRect(el){
     color: el.style.background||prev.color||null,
     shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
     z: parseInt(el.style.zIndex||prev.z||'1',10),
-    par: prev.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}
+    par: prev.par || defaultPar()
   });
 }
 
-/* Edit panel */
-const editPanel=document.getElementById('editPanel');
-const epLabel=document.getElementById('epLabel');
-const inpLabel=document.getElementById('inpLabel');
-const btnColor=document.getElementById('btnColor');
-const inpColor=document.getElementById('inpColor');
-const selShape=document.getElementById('selShape');
-const btnEPOk=document.getElementById('btnEPOk');
-const btnSoundFile=document.getElementById('btnSoundFile');
-const inpSoundFile=document.getElementById('inpSoundFile');
-const btnSoundUrl=document.getElementById('btnSoundUrl');
-const btnClrSound=document.getElementById('btnClrSound');
-const parGain=document.getElementById('parGain');
-const parSemi=document.getElementById('parSemi');
-const parAtk=document.getElementById('parAtk');
-const parDec=document.getElementById('parDec');
-const parPan=document.getElementById('parPan');
-
+/* Edit panel: show/hide/select */
 function showEditPanel(anchorEl){
   editPanelVisible=true; editPanel.style.display='block';
   if(anchorEl){
@@ -643,8 +664,9 @@ function showEditPanel(anchorEl){
   inpLabel.value=(cfg.label)||id.toUpperCase();
   selShape.value=(cfg.shape)||'round';
   if(cfg.color && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) inpColor.value=cfg.color;
-  const p=cfg.par||{gain:1,semi:0,atk:0.01,dec:0.2,pan:0};
-  parGain.value=p.gain; parSemi.value=p.semi; parAtk.value=p.atk; parDec.value=p.dec; parPan.value=p.pan;
+  const p=cfg.par||defaultPar();
+  rGain.value=p.gain; rSemi.value=p.semi; rAtk.value=p.atk; rDec.value=p.dec; rPan.value=p.pan;
+  updateValueLabels();
 }
 function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
 function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
@@ -654,7 +676,7 @@ function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').
 btnEPOk.addEventListener('click', ()=> hideEditPanel());
 function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 
-/* Edytowalne właściwości */
+/* Edytowalne właściwości – label/kolor/kształt */
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
@@ -685,21 +707,60 @@ btnClrSound.addEventListener('click', ()=>{
 });
 function applyPadSound(obj){ const id=currentCfgId(); if(!id) return; draftPositions= draftPositions||{}; draftPositions[id]=draftPositions[id]||{}; draftPositions[id].sound=obj; }
 
-/* Parametry */
-[parGain,parSemi,parAtk,parDec,parPan].forEach(inp=>{
+/* Parametry: zapis do draftu + live preview */
+function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
+function writeParToDraft(){
+  const id=currentCfgId(); if(!id) return;
+  draftPositions = draftPositions||{}; draftPositions[id]=draftPositions[id]||{};
+  draftPositions[id].par = {
+    gain: clampNum(parseFloat(rGain.value),0,2,1),
+    semi: clampNum(parseInt(rSemi.value||0),-24,24,0),
+    atk:  clampNum(parseFloat(rAtk.value),0,1.5,0.01),
+    dec:  clampNum(parseFloat(rDec.value),0.05,3,0.2),
+    pan:  clampNum(parseFloat(rPan.value),-1,1,0)
+  };
+}
+function triggerPreviewDebounced(){
+  if(!livePreviewOn) return;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(()=>{
+    const el=selectedPadEl; if(!el) return;
+    const id=el.dataset.sound;
+    const saved=getSavedPositions()[id]||{};
+    const livePar = (draftPositions?.[id]?.par) || defaultPar();
+    const cfg={ ...saved, par: {...livePar} };
+    startAudio();
+    padDown(el, cfg);
+  }, 140);
+}
+[rGain,rSemi,rAtk,rDec,rPan].forEach(inp=>{
   inp.addEventListener('input', ()=>{
-    const id=currentCfgId(); if(!id) return;
-    draftPositions = draftPositions||{}; draftPositions[id]=draftPositions[id]||{};
-    draftPositions[id].par = {
-      gain: clampNum(parseFloat(parGain.value),0,2,1),
-      semi: clampNum(parseInt(parSemi.value||0),-24,24,0),
-      atk:  clampNum(parseFloat(parAtk.value),0,1.5,0.01),
-      dec:  clampNum(parseFloat(parDec.value),0.05,3,0.2),
-      pan:  clampNum(parseFloat(parPan.value),-1,1,0)
-    };
+    updateValueLabels();
+    writeParToDraft();
+    triggerPreviewDebounced();
   });
 });
-function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
+liveToggle.addEventListener('click', ()=>{
+  livePreviewOn = !(liveToggle.dataset.on==='1');
+  liveToggle.dataset.on = livePreviewOn ? '1':'0';
+});
+btnTest.addEventListener('click', ()=>{
+  const el=selectedPadEl; if(!el) return;
+  const id=el.dataset.sound;
+  const saved=getSavedPositions()[id]||{};
+  const livePar = (draftPositions?.[id]?.par) || defaultPar();
+  const cfg={ ...saved, par: {...livePar} };
+  startAudio();
+  padDown(el, cfg);
+});
+btnResetPar.addEventListener('click', ()=>{
+  const id=currentCfgId(); if(!id) return;
+  const d=defaultPar();
+  rGain.value=d.gain; rSemi.value=d.semi; rAtk.value=d.atk; rDec.value=d.dec; rPan.value=d.pan;
+  updateValueLabels();
+  writeParToDraft();
+  triggerPreviewDebounced();
+});
 
 /* Menu */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
@@ -765,5 +826,3 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
-
-
