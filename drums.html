@@ -245,28 +245,19 @@ function initAudio(){ if(ctx) return;
   master=ctx.createGain(); volumeNode=ctx.createGain();
   (master.connect(volumeNode)).connect(ctx.destination);
   volumeNode.gain.value=parseFloat(vol.value);
-  // iOS nudge
   try{ const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02); }catch{}
 }
-async function ensureRunning(){
-  if(!ctx) initAudio();
-  if(ctx.state !== 'running'){ try{ await ctx.resume(); }catch{} }
-  return ctx.state === 'running';
-}
-async function startAudio(){
-  initAudio();
-  const ok = await ensureRunning();
-  started = ok || started;
-}
+async function ensureRunning(){ if(!ctx) initAudio(); if(ctx.state!=='running'){ try{ await ctx.resume(); }catch{} } return ctx.state==='running'; }
+async function startAudio(){ initAudio(); const ok=await ensureRunning(); started=ok||started; }
 const now=()=>ctx?ctx.currentTime:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
-/* === SYNTHS (z parametrami) === */
+/* === SYNTHS === */
 const S={
   kick:(t=now(),par={})=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine';
     const base=160*Math.pow(2,(par.semi||0)/12); o.frequency.setValueAtTime(base,t); o.frequency.exponentialRampToValueAtTime(40,t+(par.dec||.14));
-    g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(par.gain??1,t+(par.atk||.01)); g.gain.exponentialRampToValueAtTime(0.001,t+Math.max(.18, (par.dec||.18)));
+    g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(par.gain??1,t+(par.atk||.01)); g.gain.exponentialRampToValueAtTime(0.001,t+Math.max(.18,(par.dec||.18)));
     o.connect(g).connect(master); o.start(t); o.stop(t+Math.max(.25,(par.dec||.25))); },
   snare:(t=now(),par={})=>{ const src=ctx.createBufferSource(); src.buffer=sharedNoise(); const hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=1200;
     const g=ctx.createGain(); g.gain.value=par.gain??.6; src.connect(hp).connect(g).connect(master); src.start(t); src.stop(t+Math.max(.12,(par.dec||.12))); },
@@ -351,7 +342,6 @@ let useCanvasLayout = localStorage.getItem(layoutUseKey)==='1';
 let draftPositions=null;
 let selectedPadEl=null;
 let editPanelVisible=false;
-let currentPadPar=null;
 
 /* Helpers */
 function getSavedPositions(){ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }
@@ -444,7 +434,6 @@ async function padDown(el,cfg){
   if(!started || (ctx && ctx.state!=='running')) await startAudio();
   const id=el.dataset.sound;
   const par=cfg?.par || {gain:1,semi:0,atk:0.01,dec:0.2,pan:0};
-  currentPadPar = par;
 
   const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
   if(sound){
@@ -498,6 +487,7 @@ function makeDraggable(el){
     const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
     const R=stageRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
     el.style.left=clampPc(sl+dx)+'%'; el.style.top=clampPc(st+dy)+'%';
+    // podgląd wartości w panelu
     updateEditPanelFromEl(el,true);
   };
   const up=()=>{ drag=false; el.classList.remove('dragging');
@@ -567,16 +557,10 @@ const btnColor=document.getElementById('btnColor');
 const inpColor=document.getElementById('inpColor');
 const selShape=document.getElementById('selShape');
 const btnEPOk=document.getElementById('btnEPOk');
-
-const btnFront=document.getElementById('btnFront');
-const btnBack=document.getElementById('btnBack');
-const btnDup=document.getElementById('btnDup');
-const btnDel=document.getElementById('btnDel');
 const btnSoundFile=document.getElementById('btnSoundFile');
 const inpSoundFile=document.getElementById('inpSoundFile');
 const btnSoundUrl=document.getElementById('btnSoundUrl');
 const btnClrSound=document.getElementById('btnClrSound');
-
 const parGain=document.getElementById('parGain');
 const parSemi=document.getElementById('parSemi');
 const parAtk=document.getElementById('parAtk');
@@ -592,6 +576,7 @@ function showEditPanel(anchorEl){
   }
   const id=currentCfgId(); if(!id) return;
   const cfg=(draftPositions&&draftPositions[id]) || getSavedPositions()[id] || {};
+  epLabel.textContent = id.toUpperCase();
   inpLabel.value=(cfg.label)||id.toUpperCase();
   selShape.value=(cfg.shape)||'round';
   if(cfg.color && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) inpColor.value=cfg.color;
@@ -616,22 +601,26 @@ inpLabel.addEventListener('input', ()=>{
 });
 btnColor.addEventListener('click', ()=> inpColor.click());
 inpColor.addEventListener('input', ()=>{ if(!selectedPadEl) return; selectedPadEl.style.background=inpColor.value; savePadRect(selectedPadEl); });
-selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return; ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c)); selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl); });
+
+selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return;
+  ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c));
+  selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl);
+});
 
 /* Audio assign */
-btnSoundFile?.addEventListener('click', ()=> inpSoundFile.click());
-inpSoundFile?.addEventListener('change', async ()=>{
+btnSoundFile.addEventListener('click', ()=> inpSoundFile.click());
+inpSoundFile.addEventListener('change', async ()=>{
   if(!selectedPadEl || !inpSoundFile.files[0]) return;
   const f=inpSoundFile.files[0]; const data=await f.arrayBuffer();
   const b64=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(new Blob([data])); });
   applyPadSound({type:'dataurl', src:String(b64)}); inpSoundFile.value=''; alert('Dźwięk z pliku przypisany. Zapisz układ, aby zachować.');
 });
-btnSoundUrl?.addEventListener('click', ()=>{
+btnSoundUrl.addEventListener('click', ()=>{
   if(!selectedPadEl) return;
   const url=prompt('Wklej URL do pliku audio:\n(np. https://raw.githubusercontent.com/<user>/<repo>/main/sounds/kick.wav)');
   if(!url) return; applyPadSound({type:'url', src:url.trim()}); alert('Dźwięk z URL przypisany. Zapisz układ, aby zachować.');
 });
-btnClrSound?.addEventListener('click', ()=>{
+btnClrSound.addEventListener('click', ()=>{
   const id=currentCfgId(); if(!id||!draftPositions) return;
   draftPositions[id]=draftPositions[id]||{}; draftPositions[id].sound=null; alert('Usunięto przypisanie dźwięku. Zapisz układ, aby zachować.');
 });
@@ -705,11 +694,9 @@ function metroTick(){
   o.connect(g).connect(master); o.start(t); o.stop(t+0.08);
 }
 
-/* Init */
+/* Init + pierwszy gest */
 function initialRender(){ applyUseBtn(); renderPads(); }
 window.addEventListener('load', initialRender);
-
-/* Global „first gesture” — odblokuj audio natychmiast przy pierwszym geście */
 function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture, {once:true}); window.removeEventListener('keydown', firstGesture, {once:true}); }
 window.addEventListener('pointerdown', firstGesture, {once:true});
 window.addEventListener('keydown', firstGesture, {once:true});
