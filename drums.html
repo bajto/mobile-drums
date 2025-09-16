@@ -220,13 +220,41 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
     </div>
 
     <div class="row">
-      <span class="badge">Parametry:</span>
-      <label class="btn">Vol <input id="parGain" type="number" step="0.05" min="0" max="2" value="1" style="width:72px;margin-left:.4rem"></label>
-      <label class="btn">Semi <input id="parSemi" type="number" step="1" min="-24" max="24" value="0" style="width:72px;margin-left:.4rem"></label>
-      <label class="btn">Atak <input id="parAtk" type="number" step="0.01" min="0" max="1.5" value="0.01" style="width:80px;margin-left:.4rem"></label>
-      <label class="btn">Zanik <input id="parDec" type="number" step="0.01" min="0.05" max="3" value="0.2" style="width:80px;margin-left:.4rem"></label>
-      <label class="btn">Pan <input id="parPan" type="number" step="0.1" min="-1" max="1" value="0" style="width:72px;margin-left:.4rem"></label>
-    </div>
+  <span class="badge">Parametry:</span>
+  <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
+    <label class="btn" style="justify-content:space-between;gap:1rem">
+      Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span>
+    </label>
+    <input id="rGain" type="range" min="0" max="2" step="0.01" value="1">
+
+    <label class="btn" style="justify-content:space-between;gap:1rem">
+      Semi&nbsp;<span id="lblSemi">0</span>
+    </label>
+    <input id="rSemi" type="range" min="-24" max="24" step="1" value="0">
+
+    <label class="btn" style="justify-content:space-between;gap:1rem">
+      Atak&nbsp;<span id="lblAtk">0.01 s</span>
+    </label>
+    <input id="rAtk" type="range" min="0" max="1.5" step="0.01" value="0.01">
+
+    <label class="btn" style="justify-content:space-between;gap:1rem">
+      Zanik&nbsp;<span id="lblDec">0.20 s</span>
+    </label>
+    <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.2">
+
+    <label class="btn" style="justify-content:space-between;gap:1rem">
+      Pan&nbsp;<span id="lblPan">0.0</span>
+    </label>
+    <input id="rPan" type="range" min="-1" max="1" step="0.1" value="0">
+  </div>
+</div>
+
+<div class="row" style="margin-top:.2rem">
+  <label class="btn toggle" id="liveToggle" data-on="1">Odsłuch LIVE</label>
+  <button id="btnTest" class="btn">Test</button>
+  <button id="btnResetPar" class="btn ghost">Reset parametrów</button>
+</div>
+
 
     <div class="row" style="margin-top:.4rem">
       <button id="btnEPOk" class="btn primary">OK</button>
@@ -737,4 +765,5 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
+
 
