@@ -1,5 +1,5 @@
 // sw.js — v7
-const CACHE = 'drums-cache-v11';
+const CACHE = 'drums-cache-v12';
 const ASSETS = [
   './',
   './drums.html',
@@ -30,3 +30,4 @@ self.addEventListener('fetch', (e) => {
     }).catch(() => caches.match('./drums.html')))
   );
 });
+
