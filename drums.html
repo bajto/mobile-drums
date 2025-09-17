@@ -64,7 +64,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 
 /* Pads */
 .pad{
-  background:var(--pad);border:1px solid #2b3138;border-radius:2rem;
+  background:var(--pad);border:1px solid #2b3138;border-radius:12px;
   display:flex;align-items:center;justify-content:center;text-align:center;
   padding:.45rem;user-select:none;-webkit-user-select:none;font-weight:800;letter-spacing:.3px;
   box-shadow:0 2px 0 rgba(0,0,0,.5) inset,0 6px 18px rgba(0,0,0,.25);
@@ -128,7 +128,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
 .icon::before{top:-6px}.icon::after{top:6px}
 
-/* small responsive tweak so rotated pads don't overflow touch area on tiny screens */
+/* small tweak so rotated pads don't overflow on tiny screens */
 .canvas .pad{box-sizing:border-box}
 </style>
 </head>
@@ -222,33 +222,23 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
       <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
     </div>
 
-    <!-- NOWY panel parametrów: suwaki + live preview -->
+    <!-- Parametry: suwaki + live preview -->
     <div class="row">
       <span class="badge">Parametry:</span>
       <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
-        <label class="btn" style="justify-content:space-between;gap:1rem">
-          Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span>
-        </label>
+        <label class="btn" style="justify-content:space-between;gap:1rem">Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span></label>
         <input id="rGain" type="range" min="0" max="2" step="0.01" value="1">
 
-        <label class="btn" style="justify-content:space-between;gap:1rem">
-          Semi&nbsp;<span id="lblSemi">0</span>
-        </label>
+        <label class="btn" style="justify-content:space-between;gap:1rem">Semi&nbsp;<span id="lblSemi">0</span></label>
         <input id="rSemi" type="range" min="-24" max="24" step="1" value="0">
 
-        <label class="btn" style="justify-content:space-between;gap:1rem">
-          Atak&nbsp;<span id="lblAtk">0.01 s</span>
-        </label>
+        <label class="btn" style="justify-content:space-between;gap:1rem">Atak&nbsp;<span id="lblAtk">0.01 s</span></label>
         <input id="rAtk" type="range" min="0" max="1.5" step="0.01" value="0.01">
 
-        <label class="btn" style="justify-content:space-between;gap:1rem">
-          Zanik&nbsp;<span id="lblDec">0.20 s</span>
-        </label>
-        <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.2">
+        <label class="btn" style="justify-content:space-between;gap:1rem">Zanik&nbsp;<span id="lblDec">0.90 s</span></label>
+        <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.9">
 
-        <label class="btn" style="justify-content:space-between;gap:1rem">
-          Pan&nbsp;<span id="lblPan">0.0</span>
-        </label>
+        <label class="btn" style="justify-content:space-between;gap:1rem">Pan&nbsp;<span id="lblPan">0.0</span></label>
         <input id="rPan" type="range" min="-1" max="1" step="0.1" value="0">
       </div>
     </div>
@@ -283,7 +273,7 @@ function resumeWithRace(){
   return Promise.race([tryResume, guard]).then(v=>{ done=true; return v; });
 }
 function startAudio(){ initAudio(); resumeWithRace().then(ok=>{ started = ok || started; }); }
-const now=()=>ctx?ctx.currentTime+0.01:0; // safety offset +10ms
+const now=()=>ctx?ctx.currentTime+0.01:0; // +10ms safety
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
@@ -330,19 +320,15 @@ const S={
     o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+Math.max(1.0,(par.dec||1.0))); }
 };
 
-/* === Cymbałki / Xyl map ===
-   Wersja rozszerzona: 13-nutowe diatoniczne i chromatyczne
-*/
+/* === Cymbałki / Xyl map (13) === */
 const XYL = {
-  // Diatoniczne (lower range C4..A5) - 13 naturalnych (we'll use subset for 13)
+  // Diatoniczne (C4..A5)
   xylC4:261.63, xylD4:293.66, xylE4:329.63, xylF4:349.23, xylG4:392.00, xylA4:440.00, xylB4:493.88,
   xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46, xylG5:783.99, xylA5:880.00,
-  // Chromatic-ish IDs (sharps) - for chromatic kit
+  // Chromatyczne (półtony w okolicach C5..C6)
   xylCs5:554.37, xylDs5:622.25, xylFs5:739.99, xylGs5:830.61, xylAs5:932.33,
   xylB5:987.77, xylC6:1046.50
 };
-
-/* Labels for nicer display */
 const LABELS_DIAT13 = {
   xylC4:'C4', xylD4:'D4', xylE4:'E4', xylF4:'F4', xylG4:'G4', xylA4:'A4', xylB4:'H4',
   xylC5:'C5', xylD5:'D5', xylE5:'E5', xylF5:'F5', xylG5:'G5', xylA5:'A5'
@@ -372,9 +358,8 @@ function colorClass(id){
   if(['snare','clap'].includes(id)) return 'c-snare';
   if(['hatClosed','hatOpen'].includes(id)) return 'c-hats';
   if(['tomHigh','tomLow'].includes(id)) return 'c-toms';
-  if(['crash','ride'].includes(id)) return 'c-cym';
+  if(['crash','ride'].includes(id) || /^xyl/.test(id)) return 'c-cym';
   if(/^hand\d$/.test(id)) return 'c-hand';
-  if(/^xyl/.test(id)) return 'c-cym';
   return 'c-fun';
 }
 
@@ -408,45 +393,42 @@ let editPanelVisible=false;
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* DEFAULT POSITIONS: special layout for 13-key bells (rotated bars) */
+/* === Default positions ===
+   13 dzwonków: wąskie poziome sztabki, obrócone 90°, od dołu (najniższe) do góry (najwyższe)
+*/
 function defaultPositionsForKit(list){
   const out={};
-
-  // wykrycie naszych 13-klawiszowych dzwonków
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
   const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
 
   if (isDiat13 || isChr13){
-    // USTAWIENIA UKŁADU: wąskie poziome sztabki, obrócone o 90°, ułożone pionowo od dołu do góry
-    const rot = 90;              // sztabki poziome (po obrocie 90°)
-    const barThickness = 6.0;    // „grubość” sztabki (w % wysokości sceny pozycjonowanej)
-    const gap = 1.2;             // odstęp między sztabkami (w %)
-    const bottomMargin = 6;      // bezpieczny margines od dołu (w %)
+    const rot = 90;            // obrót sztabek
+    const barThickness = 6.0;  // „grubość” sztabki (w %)
+    const gap = 1.2;           // odstęp (w %)
+    const bottomMargin = 6;    // margines od dołu (w %)
 
-    // długości sztabek (w % wysokości sceny) – od najdłuższej (dół) do najkrótszej (góra)
+    // długości sztabek (w %) – dół najdłuższa → góra najkrótsza
     const lengths = [78,76,74,72,70,68,66,64,62,60,58,56,54];
 
-    // kolory: diatoniczne – zabawkowe kolory; chromatyczne – białe + czarne dla # (półtony)
+    // kolory
     const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
     const colWhite = '#f7f8f9';
     const colBlack = '#0f0f10';
 
     list.forEach((id,i)=>{
-      const len = lengths[i] || 60;           // „długość” sztabki (po obrocie będzie to jej szerokość)
-      const h = barThickness;                  // wysokość elementu przed obrotem (= grubość sztabki)
-      const w = len;                           // szerokość elementu przed obrotem (= długość sztabki)
-      // pozycjonowanie: układamy od DOŁU do GÓRY
-      const top = 100 - bottomMargin - h - i*(h + gap);
-      const left = 50 - (w/2);                 // wyśrodkowane w poziomie
+      const len = lengths[i] || 60;
+      const w = len;                    // szerokość (przed obrotem)
+      const h = barThickness;           // wysokość (przed obrotem)
+      const top = 100 - bottomMargin - h - i*(h + gap); // od dołu do góry
+      const left = 50 - (w/2);          // wyśrodkowane
       const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
                             : (LABELS_DIAT13[id] || id.toUpperCase());
-      const color = isChr13
-        ? (/s/.test(id) ? colBlack : colWhite) // # (z literą 's' w ID) = czarne
-        : pastel[i % pastel.length];
+      const color = isChr13 ? (/s/.test(id) ? colBlack : colWhite)
+                            : pastel[i % pastel.length];
 
       out[id] = {
-        left, top, w, h,
-        rot, z: i+1,
+        left, top, w, h, rot,
+        z: i+1,
         label,
         color,
         shape: 'round',
@@ -457,23 +439,13 @@ function defaultPositionsForKit(list){
     return out;
   }
 
-  // DOMYŚLNY UKŁAD dla pozostałych zestawów (siatka 3×…)
+  // domyślna siatka dla pozostałych zestawów
   const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
     out[id]={left:2+c*cellW, top:2+r*cellH, w:cellW-2, h:cellH-4, rot:0,
-      label:id.toUpperCase(), color:null, z:i+1,
-      shape: shapeClass(id), sound:null,
+      label:id.toUpperCase(), color:null, z:i+1, shape: shapeClass(id), sound:null,
       par:{gain:1,semi:0,atk:0.01,dec:0.2,pan:0}};
-  });
-  return out;
-}
-
-  // DEFAULT GRID layout for other kits
-  const cols=3, rows=Math.ceil(list.length/cols);
-  const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
-  list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
-    out[id]={left:2+c*cellW, top:2+r*cellH, w:cellW-2, h:cellH-4, rot:0, label:id.toUpperCase(), color:null, z:i+1, shape: shapeClass(id), sound:null, par:{gain:1,semi:0,atk:0.01,dec:0.2,pan:0}};
   });
   return out;
 }
@@ -527,7 +499,7 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* --- helper for panel/draft during transform --- */
+/* sync panel-draft while moving */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
@@ -560,7 +532,7 @@ function renderPads(){
   const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : defaultPositionsForKit(list));
 
   if(!playCanvas){
-    // GRID mode
+    // GRID
     list.forEach(id=>{
       const el=document.createElement('div');
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
@@ -576,7 +548,7 @@ function renderPads(){
       stage.appendChild(el);
     });
   }else{
-    // CANVAS mode (absolute positioned, possibly rotated)
+    // CANVAS
     list.forEach((id)=>{
       const def=defaultPositionsForKit([id])[id];
       const cfg=P[id]? {...def,...P[id]} : def;
@@ -584,7 +556,6 @@ function renderPads(){
       el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
 
-      // set sizes and transform -- CSS uses percent sizes relative to stage
       el.style.left=(cfg.left??2)+'%';
       el.style.top=(cfg.top??2)+'%';
       el.style.width=(cfg.w??10)+'%';
@@ -592,11 +563,8 @@ function renderPads(){
       el.style.zIndex=String(cfg.z||1);
       if(cfg.color) el.style.background=cfg.color;
 
-      // Apply rotation around center
-      const rot = cfg.rot || 0;
-      el.style.transform = `rotate(${rot}deg)`;
+      el.style.transform = `rotate(${cfg.rot||0}deg)`;
 
-      // label element to preserve gear placement
       const labelEl = document.createElement('div');
       labelEl.className = 'labelInner';
       labelEl.style.pointerEvents='none';
@@ -606,7 +574,6 @@ function renderPads(){
       labelEl.textContent = (cfg.label)||id.toUpperCase();
       el.appendChild(labelEl);
 
-      // mini-gear
       const gear=document.createElement('div'); gear.className='gear'; gear.textContent='⚙️';
       gear.addEventListener('click',(ev)=>{ ev.stopPropagation(); selectPad(el); showEditPanel(el); });
       el.appendChild(gear);
@@ -821,7 +788,7 @@ btnClrSound.addEventListener('click', ()=>{
 });
 function applyPadSound(obj){ const id=currentCfgId(); if(!id) return; draftPositions= draftPositions||{}; draftPositions[id]=draftPositions[id]||{}; draftPositions[id].sound=obj; }
 
-/* Parametry: zapis do draftu + live preview */
+/* Parametry: zapis + live preview */
 function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
 function writeParToDraft(){
   const id=currentCfgId(); if(!id) return;
@@ -940,4 +907,3 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
-
