@@ -411,37 +411,41 @@ function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.strin
 /* DEFAULT POSITIONS: special layout for 13-key bells (rotated bars) */
 function defaultPositionsForKit(list){
   const out={};
-  // Detect 13-key diatonic or chromatic (we check by presence in label maps)
+
+  // wykrycie naszych 13-klawiszowych dzwonków
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
-  const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13) || id==='xylC6');
+  const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
 
   if (isDiat13 || isChr13){
-    // layout parameters
-    const rot = 90;             // rotate pads by 90deg
-    const barThickness = 6.0;   // narrow thickness (in % of width)
-    const gap = 1.2;            // gap between bars
-    const total = 13*barThickness + 12*gap;
-    const leftStart = (100 - total)/2; // percent left
-    const centerY = 50;         // center vertical position in %
-    // lengths: long->short in percent of stage height
+    // USTAWIENIA UKŁADU: wąskie poziome sztabki, obrócone o 90°, ułożone pionowo od dołu do góry
+    const rot = 90;              // sztabki poziome (po obrocie 90°)
+    const barThickness = 6.0;    // „grubość” sztabki (w % wysokości sceny pozycjonowanej)
+    const gap = 1.2;             // odstęp między sztabkami (w %)
+    const bottomMargin = 6;      // bezpieczny margines od dołu (w %)
+
+    // długości sztabek (w % wysokości sceny) – od najdłuższej (dół) do najkrótszej (góra)
     const lengths = [78,76,74,72,70,68,66,64,62,60,58,56,54];
 
-    // Colors for diatonic (pastel rainbow), chromatic: white bars + black sharps
+    // kolory: diatoniczne – zabawkowe kolory; chromatyczne – białe + czarne dla # (półtony)
     const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
     const colWhite = '#f7f8f9';
     const colBlack = '#0f0f10';
 
     list.forEach((id,i)=>{
-      const len = lengths[i] || 60;
-      const left = leftStart + i*(barThickness + gap);
-      const h = len; // height before rotation (percent)
-      const w = barThickness;
-      const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase()) : (LABELS_DIAT13[id] || id.toUpperCase());
+      const len = lengths[i] || 60;           // „długość” sztabki (po obrocie będzie to jej szerokość)
+      const h = barThickness;                  // wysokość elementu przed obrotem (= grubość sztabki)
+      const w = len;                           // szerokość elementu przed obrotem (= długość sztabki)
+      // pozycjonowanie: układamy od DOŁU do GÓRY
+      const top = 100 - bottomMargin - h - i*(h + gap);
+      const left = 50 - (w/2);                 // wyśrodkowane w poziomie
+      const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
+                            : (LABELS_DIAT13[id] || id.toUpperCase());
       const color = isChr13
-        ? (/s/.test(id) ? colBlack : colWhite) // if id name contains 's' treat as sharp -> black
-        : (pastel[i % pastel.length]);
+        ? (/s/.test(id) ? colBlack : colWhite) // # (z literą 's' w ID) = czarne
+        : pastel[i % pastel.length];
+
       out[id] = {
-        left, top: centerY - h/2, w, h,
+        left, top, w, h,
         rot, z: i+1,
         label,
         color,
@@ -452,6 +456,18 @@ function defaultPositionsForKit(list){
     });
     return out;
   }
+
+  // DOMYŚLNY UKŁAD dla pozostałych zestawów (siatka 3×…)
+  const cols=3, rows=Math.ceil(list.length/cols);
+  const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
+  list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
+    out[id]={left:2+c*cellW, top:2+r*cellH, w:cellW-2, h:cellH-4, rot:0,
+      label:id.toUpperCase(), color:null, z:i+1,
+      shape: shapeClass(id), sound:null,
+      par:{gain:1,semi:0,atk:0.01,dec:0.2,pan:0}};
+  });
+  return out;
+}
 
   // DEFAULT GRID layout for other kits
   const cols=3, rows=Math.ceil(list.length/cols);
@@ -924,3 +940,4 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
+
