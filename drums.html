@@ -128,7 +128,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
 .icon::before{top:-6px}.icon::after{top:6px}
 
-/* small tweak so rotated pads don't overflow on tiny screens */
+/* small tweak */
 .canvas .pad{box-sizing:border-box}
 </style>
 </head>
@@ -222,22 +222,18 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
       <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
     </div>
 
-    <!-- Parametry: suwaki + live preview -->
+    <!-- Parametry -->
     <div class="row">
       <span class="badge">Parametry:</span>
       <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
         <label class="btn" style="justify-content:space-between;gap:1rem">Vol&nbsp;<span id="lblGain">1.00 (0 dB)</span></label>
         <input id="rGain" type="range" min="0" max="2" step="0.01" value="1">
-
         <label class="btn" style="justify-content:space-between;gap:1rem">Semi&nbsp;<span id="lblSemi">0</span></label>
         <input id="rSemi" type="range" min="-24" max="24" step="1" value="0">
-
         <label class="btn" style="justify-content:space-between;gap:1rem">Atak&nbsp;<span id="lblAtk">0.01 s</span></label>
         <input id="rAtk" type="range" min="0" max="1.5" step="0.01" value="0.01">
-
         <label class="btn" style="justify-content:space-between;gap:1rem">Zanik&nbsp;<span id="lblDec">0.90 s</span></label>
         <input id="rDec" type="range" min="0.05" max="3" step="0.01" value="0.9">
-
         <label class="btn" style="justify-content:space-between;gap:1rem">Pan&nbsp;<span id="lblPan">0.0</span></label>
         <input id="rPan" type="range" min="-1" max="1" step="0.1" value="0">
       </div>
@@ -320,12 +316,20 @@ const S={
     o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+Math.max(1.0,(par.dec||1.0))); }
 };
 
-/* === Cymbałki / Xyl map (13) === */
+/* === MAPY NUT === */
+
+// Handpan (żeby nie waliło błędem gdy wybierzesz Handpan)
+const HAND={
+  hand1:220.00, hand2:246.94, hand3:261.63, hand4:293.66, hand5:329.63,
+  hand6:349.23, hand7:392.00, hand8:440.00, hand9:493.88
+};
+
+// Cymbałki
 const XYL = {
-  // Diatoniczne (C4..A5)
+  // Diatoniczne (C4..A5 – 13 naturalnych)
   xylC4:261.63, xylD4:293.66, xylE4:329.63, xylF4:349.23, xylG4:392.00, xylA4:440.00, xylB4:493.88,
   xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46, xylG5:783.99, xylA5:880.00,
-  // Chromatyczne (półtony w okolicach C5..C6)
+  // Chromatyczne (półtony w okolicy C5..C6)
   xylCs5:554.37, xylDs5:622.25, xylFs5:739.99, xylGs5:830.61, xylAs5:932.33,
   xylB5:987.77, xylC6:1046.50
 };
@@ -394,7 +398,8 @@ function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positi
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
 /* === Default positions ===
-   13 dzwonków: wąskie poziome sztabki, obrócone 90°, od dołu (najniższe) do góry (najwyższe)
+   Klawisze „pianinowe”: każdy ma własne X (równy rozkład), wspólny Y (środek),
+   i jest obrócony o 90° w swoim miejscu.
 */
 function defaultPositionsForKit(list){
   const out={};
@@ -402,25 +407,28 @@ function defaultPositionsForKit(list){
   const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
 
   if (isDiat13 || isChr13){
-    const rot = 90;            // obrót sztabek
-    const barThickness = 6.0;  // „grubość” sztabki (w %)
-    const gap = 1.2;           // odstęp (w %)
-    const bottomMargin = 6;    // margines od dołu (w %)
+    const rot = 90;           // obrót „klawisza”
+    const keyWidth = 6.5;     // „grubość” pionowego klawisza (w % szerokości sceny)
+    const gap = 1.0;          // przerwa między klawiszami
+    const total = 13*keyWidth + 12*gap;
+    const leftStart = (100 - total)/2; // wyśrodkowanie zestawu
+    const centerY = 50;       // wspólny Y (klawisze wycentrowane pionowo)
 
-    // długości sztabek (w %) – dół najdłuższa → góra najkrótsza
+    // „długość” klawisza (w % wysokości) – od dłuższych do krótszych
     const lengths = [78,76,74,72,70,68,66,64,62,60,58,56,54];
 
-    // kolory
     const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
     const colWhite = '#f7f8f9';
     const colBlack = '#0f0f10';
 
     list.forEach((id,i)=>{
-      const len = lengths[i] || 60;
-      const w = len;                    // szerokość (przed obrotem)
-      const h = barThickness;           // wysokość (przed obrotem)
-      const top = 100 - bottomMargin - h - i*(h + gap); // od dołu do góry
-      const left = 50 - (w/2);          // wyśrodkowane
+      const len = lengths[i] || 60;   // wysokość (po obrocie)
+      const w = keyWidth;             // szerokość klawisza (po obrocie)
+      const h = len;                  // wysokość klawisza (po obrocie)
+      // pozycja „przed obrotem” (bo box jest obracany wokół środka)
+      const left = leftStart + i*(keyWidth+gap);
+      const top  = centerY - (h/2);
+
       const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
                             : (LABELS_DIAT13[id] || id.toUpperCase());
       const color = isChr13 ? (/s/.test(id) ? colBlack : colWhite)
@@ -429,8 +437,7 @@ function defaultPositionsForKit(list){
       out[id] = {
         left, top, w, h, rot,
         z: i+1,
-        label,
-        color,
+        label, color,
         shape: 'round',
         sound: null,
         par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0}
@@ -439,7 +446,7 @@ function defaultPositionsForKit(list){
     return out;
   }
 
-  // domyślna siatka dla pozostałych zestawów
+  // domyślna siatka
   const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
@@ -499,7 +506,7 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* sync panel-draft while moving */
+/* sync during move */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
@@ -754,7 +761,7 @@ function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').
 btnEPOk.addEventListener('click', ()=> hideEditPanel());
 function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 
-/* Edytowalne właściwości – label/kolor/kształt */
+/* Edytowalne właściwości */
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
@@ -788,7 +795,7 @@ btnClrSound.addEventListener('click', ()=>{
 });
 function applyPadSound(obj){ const id=currentCfgId(); if(!id) return; draftPositions= draftPositions||{}; draftPositions[id]=draftPositions[id]||{}; draftPositions[id].sound=obj; }
 
-/* Parametry: zapis + live preview */
+/* Parametry + LIVE */
 function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
 function writeParToDraft(){
   const id=currentCfgId(); if(!id) return;
@@ -801,6 +808,13 @@ function writeParToDraft(){
     pan:  clampNum(parseFloat(rPan.value),-1,1,0)
   };
 }
+let livePreviewOn = true;
+const liveToggle=document.getElementById('liveToggle');
+liveToggle.addEventListener('click', ()=>{
+  livePreviewOn = !(liveToggle.dataset.on==='1');
+  liveToggle.dataset.on = livePreviewOn ? '1':'0';
+});
+let previewTimer=null;
 function triggerPreviewDebounced(){
   if(!livePreviewOn) return;
   clearTimeout(previewTimer);
@@ -814,33 +828,34 @@ function triggerPreviewDebounced(){
     padDown(el, cfg);
   }, 140);
 }
+const rGain=document.getElementById('rGain'), rSemi=document.getElementById('rSemi'),
+      rAtk=document.getElementById('rAtk'), rDec=document.getElementById('rDec'), rPan=document.getElementById('rPan');
+const lblGain=document.getElementById('lblGain'), lblSemi=document.getElementById('lblSemi'),
+      lblAtk=document.getElementById('lblAtk'), lblDec=document.getElementById('lblDec'), lblPan=document.getElementById('lblPan');
+function updateValueLabels(){
+  const g=parseFloat(rGain.value);
+  lblGain.textContent=`${g.toFixed(2)} (${(g<=0?'-∞':(Math.round(20*Math.log10(g)*10)/10))} dB)`;
+  lblSemi.textContent=`${parseInt(rSemi.value,10)}`;
+  lblAtk.textContent =`${parseFloat(rAtk.value).toFixed(2)} s`;
+  lblDec.textContent =`${parseFloat(rDec.value).toFixed(2)} s`;
+  lblPan.textContent =`${parseFloat(rPan.value).toFixed(1)}`;
+}
 [rGain,rSemi,rAtk,rDec,rPan].forEach(inp=>{
-  inp.addEventListener('input', ()=>{
-    updateValueLabels();
-    writeParToDraft();
-    triggerPreviewDebounced();
-  });
+  inp.addEventListener('input', ()=>{ updateValueLabels(); writeParToDraft(); triggerPreviewDebounced(); });
 });
-liveToggle.addEventListener('click', ()=>{
-  livePreviewOn = !(liveToggle.dataset.on==='1');
-  liveToggle.dataset.on = livePreviewOn ? '1':'0';
-});
-btnTest.addEventListener('click', ()=>{
+document.getElementById('btnTest').addEventListener('click', ()=>{
   const el=selectedPadEl; if(!el) return;
   const id=el.dataset.sound;
   const saved=getSavedPositions()[id]||{};
   const livePar = (draftPositions?.[id]?.par) || defaultPar();
   const cfg={ ...saved, par: {...livePar} };
-  startAudio();
-  padDown(el, cfg);
+  startAudio(); padDown(el, cfg);
 });
-btnResetPar.addEventListener('click', ()=>{
+document.getElementById('btnResetPar').addEventListener('click', ()=>{
   const id=currentCfgId(); if(!id) return;
   const d=defaultPar();
   rGain.value=d.gain; rSemi.value=d.semi; rAtk.value=d.atk; rDec.value=d.dec; rPan.value=d.pan;
-  updateValueLabels();
-  writeParToDraft();
-  triggerPreviewDebounced();
+  updateValueLabels(); writeParToDraft(); triggerPreviewDebounced();
 });
 
 /* Menu */
@@ -855,6 +870,9 @@ menuOk.onclick=()=>{
   closeMenu();
 };
 layoutStart.onclick=()=>{ closeMenu(); enterLayout(); };
+function setToggle(btn,on){ btn.dataset.on = on?'1':'0'; }
+const layoutUseBtn=document.getElementById('layoutUseBtn');
+function applyUseBtn(){ setToggle(layoutUseBtn, useCanvasLayout); }
 layoutUseBtn.addEventListener('click', ()=>{
   useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); applyUseBtn();
   if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
