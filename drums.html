@@ -60,7 +60,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   grid-template-columns:repeat(auto-fit,minmax(clamp(var(--size-min), var(--size-vw), var(--size-max)),1fr));
   grid-auto-rows:minmax(clamp(72px,16vh,180px),1fr); align-content:start}
 .canvas{position:relative}
-.canvas .pad{position:absolute;touch-action:none}
+.canvas .pad{position:absolute;touch-action:none;transform-origin:center center}
 
 /* Pads */
 .pad{
@@ -68,15 +68,16 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   display:flex;align-items:center;justify-content:center;text-align:center;
   padding:.45rem;user-select:none;-webkit-user-select:none;font-weight:800;letter-spacing:.3px;
   box-shadow:0 2px 0 rgba(0,0,0,.5) inset,0 6px 18px rgba(0,0,0,.25);
-  touch-action:none;font-size:16px; color:#fff; outline-offset:0; position:relative;
+  touch-action:none;font-size:16px; color:#111; outline-offset:0; position:relative;
 }
+.pad .labelInner{pointer-events:none}
 .pad.active{
   background:var(--pad-active);outline:2px solid var(--accent);
   box-shadow:0 0 0 4px rgba(74,163,255,.15),0 10px 28px rgba(0,0,0,.4) inset;
   transform:scale(.99)
 }
 .pad.dragging{opacity:.95;outline:2px dashed var(--accent)}
-.shape-round{border-radius:2rem}
+.shape-round{border-radius:12px}
 .shape-oval{border-radius:9999px}
 .shape-circle{border-radius:9999px}
 
@@ -85,14 +86,14 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   border:1px solid var(--btn-br); background:var(--btn-bg); align-items:center; justify-content:center; font-size:14px; line-height:1}
 .pad.selected .gear{display:flex}
 
-/* Kolory */
-.c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%)}
-.c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%)}
-.c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%)}
-.c-toms{background:radial-gradient(120% 120% at 30% 30%,#2d3131,#171a1a 70%)}
-.c-cym{background:radial-gradient(120% 120% at 30% 30%,#303227,#181a12 70%)}
-.c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%)}
-.c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%)}
+/* Colors for generic kits */
+.c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%); color:#fff}
+.c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%); color:#fff}
+.c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%); color:#fff}
+.c-toms{background:radial-gradient(120% 120% at 30% 30%,#2d3131,#171a1a 70%); color:#fff}
+.c-cym{background:radial-gradient(120% 120% at 30% 30%,#303227,#181a12 70%); color:#fff}
+.c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%); color:#fff}
+.c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%); color:#fff}
 
 /* Menu */
 #menuPanel{position:fixed;inset:0;z-index:100;display:none;
@@ -126,6 +127,9 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
 .icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
 .icon::before{top:-6px}.icon::after{top:6px}
+
+/* small responsive tweak so rotated pads don't overflow touch area on tiny screens */
+.canvas .pad{box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -279,7 +283,7 @@ function resumeWithRace(){
   return Promise.race([tryResume, guard]).then(v=>{ done=true; return v; });
 }
 function startAudio(){ initAudio(); resumeWithRace().then(ok=>{ started = ok || started; }); }
-const now=()=>ctx?ctx.currentTime:0;
+const now=()=>ctx?ctx.currentTime+0.01:0; // safety offset +10ms
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
@@ -325,26 +329,52 @@ const S={
     g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(par.gain??.9,t+(par.atk||.01)); g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.9,(par.dec||.9)));
     o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+Math.max(1.0,(par.dec||1.0))); }
 };
-const HAND={hand1:146.83,hand2:220.00,hand3:261.63,hand4:293.66,hand5:329.63,hand6:349.23,hand7:392.00,hand8:440.00,hand9:523.25};
+
+/* === Cymbałki / Xyl map ===
+   Wersja rozszerzona: 13-nutowe diatoniczne i chromatyczne
+*/
 const XYL = {
-  xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46,
-  xylG5:783.99, xylA5:880.00, xylB5:987.77, xylC6:1046.50
+  // Diatoniczne (lower range C4..A5) - 13 naturalnych (we'll use subset for 13)
+  xylC4:261.63, xylD4:293.66, xylE4:329.63, xylF4:349.23, xylG4:392.00, xylA4:440.00, xylB4:493.88,
+  xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46, xylG5:783.99, xylA5:880.00,
+  // Chromatic-ish IDs (sharps) - for chromatic kit
+  xylCs5:554.37, xylDs5:622.25, xylFs5:739.99, xylGs5:830.61, xylAs5:932.33,
+  xylB5:987.77, xylC6:1046.50
+};
+
+/* Labels for nicer display */
+const LABELS_DIAT13 = {
+  xylC4:'C4', xylD4:'D4', xylE4:'E4', xylF4:'F4', xylG4:'G4', xylA4:'A4', xylB4:'H4',
+  xylC5:'C5', xylD5:'D5', xylE5:'E5', xylF5:'F5', xylG5:'G5', xylA5:'A5'
+};
+const LABELS_CHR13 = {
+  xylC5:'C', xylCs5:'C#', xylD5:'D', xylDs5:'D#', xylE5:'E',
+  xylF5:'F', xylFs5:'F#', xylG5:'G', xylGs5:'G#', xylA5:'A', xylAs5:'A#', xylB5:'H', xylC6:'C6'
 };
 
 /* === Kits === */
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
   "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
-  "Cymbałki": ['xylC5','xylD5','xylE5','xylF5','xylG5','xylA5','xylB5','xylC6']
+  "Cymbałki": ['xylC5','xylD5','xylE5','xylF5','xylG5','xylA5','xylB5','xylC6'],
+  "Dzwonki diatoniczne (13)": [
+    'xylC4','xylD4','xylE4','xylF4','xylG4','xylA4','xylB4',
+    'xylC5','xylD5','xylE5','xylF5','xylG5','xylA5'
+  ],
+  "Dzwonki chromatyczne (13)": [
+    'xylC5','xylCs5','xylD5','xylDs5','xylE5','xylF5','xylFs5','xylG5','xylGs5','xylA5','xylAs5','xylB5','xylC6'
+  ]
 };
+
 function shapeClass(id){ if(/^hand\d$/.test(id)) return 'shape-oval'; if(['crash','ride','hatClosed','hatOpen'].includes(id)) return 'shape-circle'; return 'shape-round'; }
 function colorClass(id){
   if(['kick','kick808'].includes(id)) return 'c-kick';
   if(['snare','clap'].includes(id)) return 'c-snare';
   if(['hatClosed','hatOpen'].includes(id)) return 'c-hats';
   if(['tomHigh','tomLow'].includes(id)) return 'c-toms';
-  if(['crash','ride'].includes(id) || /^xyl/.test(id)) return 'c-cym';
+  if(['crash','ride'].includes(id)) return 'c-cym';
   if(/^hand\d$/.test(id)) return 'c-hand';
+  if(/^xyl/.test(id)) return 'c-cym';
   return 'c-fun';
 }
 
@@ -377,13 +407,61 @@ let editPanelVisible=false;
 /* Helpers */
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
+
+/* DEFAULT POSITIONS: special layout for 13-key bells (rotated bars) */
 function defaultPositionsForKit(list){
-  const out={}; const cols=3, rows=Math.ceil(list.length/cols);
+  const out={};
+  // Detect 13-key diatonic or chromatic (we check by presence in label maps)
+  const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
+  const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13) || id==='xylC6');
+
+  if (isDiat13 || isChr13){
+    // layout parameters
+    const rot = 90;             // rotate pads by 90deg
+    const barThickness = 6.0;   // narrow thickness (in % of width)
+    const gap = 1.2;            // gap between bars
+    const total = 13*barThickness + 12*gap;
+    const leftStart = (100 - total)/2; // percent left
+    const centerY = 50;         // center vertical position in %
+    // lengths: long->short in percent of stage height
+    const lengths = [78,76,74,72,70,68,66,64,62,60,58,56,54];
+
+    // Colors for diatonic (pastel rainbow), chromatic: white bars + black sharps
+    const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
+    const colWhite = '#f7f8f9';
+    const colBlack = '#0f0f10';
+
+    list.forEach((id,i)=>{
+      const len = lengths[i] || 60;
+      const left = leftStart + i*(barThickness + gap);
+      const h = len; // height before rotation (percent)
+      const w = barThickness;
+      const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase()) : (LABELS_DIAT13[id] || id.toUpperCase());
+      const color = isChr13
+        ? (/s/.test(id) ? colBlack : colWhite) // if id name contains 's' treat as sharp -> black
+        : (pastel[i % pastel.length]);
+      out[id] = {
+        left, top: centerY - h/2, w, h,
+        rot, z: i+1,
+        label,
+        color,
+        shape: 'round',
+        sound: null,
+        par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0}
+      };
+    });
+    return out;
+  }
+
+  // DEFAULT GRID layout for other kits
+  const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
     out[id]={left:2+c*cellW, top:2+r*cellH, w:cellW-2, h:cellH-4, rot:0, label:id.toUpperCase(), color:null, z:i+1, shape: shapeClass(id), sound:null, par:{gain:1,semi:0,atk:0.01,dec:0.2,pan:0}};
-  }); return out;
+  });
+  return out;
 }
+
 function setToggle(btn,on){ btn.dataset.on = on?'1':'0'; }
 function applyUseBtn(){ setToggle(layoutUseBtn, useCanvasLayout); }
 function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); setToggle(themeBtn, t==='neon'); }
@@ -393,7 +471,7 @@ function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=S
 bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
 
-/* Panel LIVE – referencje i utils */
+/* Panel LIVE – refs & utils */
 const editPanel=document.getElementById('editPanel');
 const epLabel=document.getElementById('epLabel');
 const inpLabel=document.getElementById('inpLabel');
@@ -433,7 +511,7 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* --- helper dla panelu i draftu podczas ruchu --- */
+/* --- helper for panel/draft during transform --- */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
@@ -446,7 +524,7 @@ function updateEditPanelFromEl(el, liveOnly=false){
       left:((P.left-R.left)/R.width)*100, top:((P.top-R.top)/R.height)*100,
       w:(P.width/R.width)*100, h:(P.height/R.height)*100,
       rot:(/rotate\(([-\d.]+)deg\)/.exec(el.style.transform||'')?.[1]*1)||0,
-      label: el.textContent.replace('⚙️','').trim(),
+      label: el.querySelector('.labelInner')?el.querySelector('.labelInner').textContent.replace('⚙️','').trim():el.textContent.replace('⚙️','').trim(),
       color: el.style.background||prev.color||null,
       shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
       z: parseInt(el.style.zIndex||prev.z||'1',10),
@@ -457,7 +535,7 @@ function updateEditPanelFromEl(el, liveOnly=false){
 
 /* Render */
 function renderPads(){
-  const list=(KITS[currentKit]||[]).slice(0,12);
+  const list=(KITS[currentKit]||[]).slice(0,13);
   const saved=getSavedPositions();
   const playCanvas=(!layoutMode && useCanvasLayout) || layoutMode;
   stage.className=playCanvas?'canvas':'grid';
@@ -466,7 +544,7 @@ function renderPads(){
   const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : defaultPositionsForKit(list));
 
   if(!playCanvas){
-    // GRID
+    // GRID mode
     list.forEach(id=>{
       const el=document.createElement('div');
       el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
@@ -482,20 +560,35 @@ function renderPads(){
       stage.appendChild(el);
     });
   }else{
+    // CANVAS mode (absolute positioned, possibly rotated)
     list.forEach((id)=>{
       const def=defaultPositionsForKit([id])[id];
       const cfg=P[id]? {...def,...P[id]} : def;
       const el=document.createElement('div');
       el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
+
+      // set sizes and transform -- CSS uses percent sizes relative to stage
       el.style.left=(cfg.left??2)+'%';
       el.style.top=(cfg.top??2)+'%';
-      el.style.width=(cfg.w??30)+'%';
+      el.style.width=(cfg.w??10)+'%';
       el.style.height=(cfg.h??18)+'%';
-      el.style.transform=`rotate(${cfg.rot||0}deg)`;
       el.style.zIndex=String(cfg.z||1);
       if(cfg.color) el.style.background=cfg.color;
-      el.textContent=(cfg.label)||id.toUpperCase();
+
+      // Apply rotation around center
+      const rot = cfg.rot || 0;
+      el.style.transform = `rotate(${rot}deg)`;
+
+      // label element to preserve gear placement
+      const labelEl = document.createElement('div');
+      labelEl.className = 'labelInner';
+      labelEl.style.pointerEvents='none';
+      labelEl.style.fontSize='14px';
+      labelEl.style.fontWeight='800';
+      labelEl.style.color = (/(#fff|f7f8f9|f2f4f6)/i.test(String(cfg.color)) ? '#111' : '#fff');
+      labelEl.textContent = (cfg.label)||id.toUpperCase();
+      el.appendChild(labelEl);
 
       // mini-gear
       const gear=document.createElement('div'); gear.className='gear'; gear.textContent='⚙️';
@@ -530,67 +623,36 @@ function renderPads(){
 }
 
 /* Play */
-/* Play */
-function padDown(el, cfg) {
-  if (!ctx) initAudio();
+function padDown(el,cfg){
+  if(!ctx) initAudio();
+  if (ctx && ctx.state !== 'running') { try { ctx.resume(); } catch(_){} }
 
-  const reallyPlay = () => {
-    const id = el.dataset.sound;
-    const par = cfg?.par || { gain: 1, semi: 0, atk: 0.01, dec: 0.2, pan: 0 };
+  const id=el.dataset.sound;
+  const par=cfg?.par || defaultPar();
 
-    // mały „bezpiecznik” – start kilka ms w przyszłość, by uniknąć startu przy t=0 po resume()
-    const t0 = now() + 0.005;
-
-    const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
-    if (sound) {
-      (async () => {
-        try {
-          const resp = await fetch(sound.src, { mode: 'cors' });
-          const arr = await resp.arrayBuffer();
-          const buf = await ctx.decodeAudioData(arr.slice(0));
-          const src = ctx.createBufferSource();
-          src.buffer = buf;
-          src.playbackRate.value = Math.pow(2, (par.semi || 0) / 12);
-
-          const g = ctx.createGain();
-          const atk = Math.max(0.001, par.atk || 0.01);
-          const dec = Math.max(0.01, par.dec || 0.2);
-          g.gain.setValueAtTime(0.0001, t0);
-          g.gain.exponentialRampToValueAtTime(Math.max(0.0002, (par.gain || 1)), t0 + atk);
-          g.gain.exponentialRampToValueAtTime(0.0001, t0 + atk + dec);
-
-          if (ctx.createStereoPanner) {
-            const p = ctx.createStereoPanner();
-            p.pan.value = par.pan || 0;
-            src.connect(g).connect(p).connect(master);
-          } else {
-            src.connect(g).connect(master);
-          }
-          src.start(t0);
-        } catch (e) {
-          console.warn('Audio URL error', e);
-        }
-      })();
-    } else {
-      // syntezatory / handpan / cymbałki
-      if (HAND[id])      S.handpanNote(HAND[id], t0, par);
-      else if (typeof XYL !== 'undefined' && XYL[id])  S.handpanNote(XYL[id], t0, par);
-      else              S[id]?.(t0, par);
-    }
-
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 140);
-  };
-
-  // pewny start audio: jeśli kontekst nie „running”, to najpierw resume i dopiero play
-  if (!ctx || ctx.state !== 'running') {
-    startAudio();                 // zainicjuj / poproś o resume
-    resumeWithRace().then(reallyPlay);
-  } else {
-    reallyPlay();
+  const sound = cfg?.sound || getSavedPositions()[id]?.sound || null;
+  if(sound){
+    (async ()=>{
+      try{
+        const resp=await fetch(sound.src,{mode:'cors'}); const arr=await resp.arrayBuffer();
+        const buf=await ctx.decodeAudioData(arr.slice(0));
+        const src=ctx.createBufferSource(); src.buffer=buf;
+        src.playbackRate.value=Math.pow(2,(par.semi||0)/12);
+        const g=ctx.createGain(); const t=now(), atk=Math.max(0.001,par.atk||0.01), dec=Math.max(0.01,par.dec||0.2);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002,(par.gain||1)), t+atk); g.gain.exponentialRampToValueAtTime(0.0001, t+atk+dec);
+        if(ctx.createStereoPanner){ const p=ctx.createStereoPanner(); p.pan.value=par.pan||0; src.connect(g).connect(p).connect(master); }
+        else { src.connect(g).connect(master); }
+        src.start(t);
+      }catch(e){ console.warn('Audio URL error',e); }
+    })();
+  }else{
+    if(HAND[id])      S.handpanNote(HAND[id], now(), par);
+    else if(XYL[id])  S.handpanNote(XYL[id],  now(), par);
+    else              S[id]?.(now(), par);
   }
-}
 
+  el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
+}
 
 /* Layout mode */
 const layoutBar=document.getElementById('layoutBar');
@@ -675,7 +737,7 @@ function savePadRect(el){
     left:((P.left-R.left)/R.width)*100, top:((P.top-R.top)/R.height)*100,
     w:(P.width/R.width)*100, h:(P.height/R.height)*100,
     rot:getRotationFromTransform(el.style.transform)||0,
-    label: el.textContent.replace('⚙️','').trim(),
+    label: el.querySelector('.labelInner')?el.querySelector('.labelInner').textContent.replace('⚙️','').trim():el.textContent.replace('⚙️','').trim(),
     color: el.style.background||prev.color||null,
     shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
     z: parseInt(el.style.zIndex||prev.z||'1',10),
@@ -713,7 +775,10 @@ function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
-  selectedPadEl.textContent=(inpLabel.value.trim()||selectedPadEl.dataset.sound.toUpperCase());
+  const label = (inpLabel.value.trim()||selectedPadEl.dataset.sound.toUpperCase());
+  const labelEl = selectedPadEl.querySelector('.labelInner') || selectedPadEl;
+  if(labelEl.classList && labelEl.classList.contains('labelInner')) labelEl.textContent = label;
+  else selectedPadEl.textContent = label;
   if(gear) selectedPadEl.appendChild(gear);
   savePadRect(selectedPadEl);
 });
@@ -847,7 +912,7 @@ function metroTick(){
   o.connect(g).connect(master); o.start(t); o.stop(t+0.08);
 }
 
-/* Init + pierwszy gest */
+/* Init + first gesture */
 function initialRender(){ applyUseBtn(); renderPads(); }
 window.addEventListener('load', initialRender);
 function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); }
@@ -859,4 +924,3 @@ if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigato
 </script>
 </body>
 </html>
-
