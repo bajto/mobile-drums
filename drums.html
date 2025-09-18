@@ -309,9 +309,7 @@ const S={
 };
 
 /* === MAPY NUT === */
-// Handpan
 const HAND={ hand1:220.00, hand2:246.94, hand3:261.63, hand4:293.66, hand5:329.63, hand6:349.23, hand7:392.00, hand8:440.00, hand9:493.88 };
-// Cymbałki
 const XYL = {
   xylC4:261.63, xylD4:293.66, xylE4:329.63, xylF4:349.23, xylG4:392.00, xylA4:440.00, xylB4:493.88,
   xylC5:523.25, xylD5:587.33, xylE5:659.25, xylF5:698.46, xylG5:783.99, xylA5:880.00,
@@ -365,31 +363,39 @@ let draftPositions=null;
 let selectedPadEl=null;
 let editPanelVisible=false;
 
+/* === helpers for layout merge & kit type === */
+function isCymbalKit(name){ return name.includes('Cymbałki') || name.includes('Dzwonki'); }
+function mergePadCfg(def, over){
+  if(!over) return {...def};
+  const out = {...def, ...over};
+  if(over.color == null) out.color = def.color;
+  if(over.shape == null) out.shape = def.shape;
+  if(over.rot   == null) out.rot   = def.rot;
+  if(!out.par) out.par = def.par ? {...def.par} : {gain:1,semi:0,atk:.01,dec:.2,pan:0};
+  return out;
+}
+
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* === DEFAULT POSITIONS (klawisze jak pianino) === */
+/* === DEFAULT POSITIONS (klawisze jak pianino dla 13) === */
 function defaultPositionsForKit(list){
   const out={};
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
   const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
 
   if (isDiat13 || isChr13){
-    const rot = 90;
-    const keyWidth = 6.5;     // szerokość pionowego klawisza (w % szerokości sceny)
-    const gap = 1.0;
+    const rot = 90, keyWidth = 6.5, gap = 1.0;
     const total = 13*keyWidth + 12*gap;
     const leftStart = (100 - total)/2;
     const centerY = 50;
     const lengths = [78,76,74,72,70,68,66,64,62,60,58,56,54];
 
     const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
-    const colWhite = '#f7f8f9';
-    const colBlack = '#0f0f10';
+    const colWhite = '#f7f8f9', colBlack = '#0f0f10';
 
     list.forEach((id,i)=>{
-      const len = lengths[i] || 60;
-      const w = keyWidth, h = len;
+      const len = lengths[i] || 60, w = keyWidth, h = len;
       const left = leftStart + i*(keyWidth+gap);
       const top  = centerY - (h/2);
       const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
@@ -494,17 +500,20 @@ function renderPads(){
   stage.className=playCanvas?'canvas':'grid';
   stage.innerHTML='';
 
-  const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : defaultPositionsForKit(list));
+  const baseDefault = defaultPositionsForKit(list);
+  const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : baseDefault);
 
   if(!playCanvas){
     // GRID
     list.forEach(id=>{
+      const cfg = mergePadCfg(baseDefault[id], saved[id]);
       const el=document.createElement('div');
-      el.className=`pad ${shapeClass(id)} ${colorClass(id)}`;
+      el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
-      el.textContent=(saved[id]?.label)||id.toUpperCase();
+      el.textContent=cfg.label || id.toUpperCase();
+      if(cfg.color) el.style.background = cfg.color;
 
-      const down = (e)=>{ e.preventDefault?.(); startAudio(); padDown(el,(saved[id]||{})); };
+      const down = (e)=>{ e.preventDefault?.(); startAudio(); padDown(el,cfg); };
       el.addEventListener('pointerdown', down, {passive:false});
       el.addEventListener('touchstart', down, {passive:false});
       el.addEventListener('pointerup', ()=>el.classList.remove('active'));
@@ -513,10 +522,9 @@ function renderPads(){
       stage.appendChild(el);
     });
   }else{
-    // CANVAS
+    // CANVAS (własny)
     list.forEach((id)=>{
-      const def=defaultPositionsForKit([id])[id];
-      const cfg=P[id]? {...def,...P[id]} : def;
+      const cfg = mergePadCfg(baseDefault[id], P[id]);
       const el=document.createElement('div');
       el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
       el.dataset.sound=id;
@@ -605,8 +613,26 @@ const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
 
-function enterLayout(){ layoutMode=true; draftPositions = structuredClone(getSavedPositions()); selectedPadEl=null; renderPads(); }
-function exitLayout(save){ if(save){ setSavedPositions(draftPositions); } layoutMode=false; draftPositions=null; selectedPadEl=null; hideEditPanel(); clearSelectionAndHandles(); renderPads(); }
+function enterLayout(){
+  layoutMode = true;
+  const list = (KITS[currentKit]||[]).slice(0,13);
+  const saved = getSavedPositions();
+  draftPositions = Object.keys(saved).length ? structuredClone(saved)
+                                             : defaultPositionsForKit(list);
+  selectedPadEl = null;
+  renderPads();
+}
+function exitLayout(save){
+  if(save && draftPositions){
+    const list = (KITS[currentKit]||[]).slice(0,13);
+    const base = defaultPositionsForKit(list);
+    const merged = {};
+    list.forEach(id => merged[id] = mergePadCfg(base[id], draftPositions[id]));
+    setSavedPositions(merged);
+  }
+  layoutMode=false; draftPositions=null; selectedPadEl=null;
+  hideEditPanel(); clearSelectionAndHandles(); renderPads();
+}
 layoutSave.onclick = ()=> exitLayout(true);
 layoutCancel.onclick = ()=> exitLayout(false);
 layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
@@ -629,7 +655,10 @@ function makeDraggable(el){
   const move=(ev)=>{ if(!drag) return; ev.preventDefault?.();
     const x=ev.clientX||(ev.touches&&ev.touches[0].clientX), y=ev.clientY||(ev.touches&&ev.touches[0].clientY);
     const R=stageRect(); const dx=((x-sx)/R.width)*100, dy=((y-sy)/R.height)*100;
-    el.style.left=clampPc(sl+dx)+'%'; el.style.top=clampPc(st+dy)+'%';
+    const verticalOnly = isCymbalKit(currentKit);
+    const newLeft = clampPc(sl+dx), newTop = clampPc(st+dy);
+    el.style.left = verticalOnly ? (sl + '%') : (newLeft + '%');
+    el.style.top  = newTop + '%';
     updateEditPanelFromEl(el,true);
   };
   const up=()=>{ drag=false; el.classList.remove('dragging');
@@ -678,16 +707,21 @@ function savePadRect(el){
   if(!draftPositions) draftPositions={};
   const id=el.dataset.sound; const R=stageRect(), P=el.getBoundingClientRect();
   const prev = draftPositions[id]||{};
-  draftPositions[id] = Object.assign(prev, {
-    left:((P.left-R.left)/R.width)*100, top:((P.top-R.top)/R.height)*100,
-    w:(P.width/R.width)*100, h:(P.height/R.height)*100,
-    rot:getRotationFromTransform(el.style.transform)||0,
-    label: el.querySelector('.labelInner')?el.querySelector('.labelInner').textContent.replace('⚙️','').trim():el.textContent.replace('⚙️','').trim(),
-    color: el.style.background||prev.color||null,
-    shape: [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round',
+  const bg = el.style.background || prev.color || null;
+  const shape = [...el.classList].find(c=>c.startsWith('shape-'))?.replace('shape-','') || prev.shape || 'round';
+  draftPositions[id] = {
+    left:((P.left-R.left)/R.width)*100,
+    top:((P.top-R.top)/R.height)*100,
+    w:(P.width/R.width)*100,
+    h:(P.height/R.height)*100,
+    rot:getRotationFromTransform(el.style.transform)||prev.rot||0,
+    label: (el.querySelector('.labelInner')?.textContent || el.textContent).replace('⚙️','').trim(),
+    color: bg,
+    shape: shape,
     z: parseInt(el.style.zIndex||prev.z||'1',10),
-    par: prev.par || defaultPar()
-  });
+    par: prev.par || defaultPar(),
+    sound: prev.sound ?? null
+  };
 }
 
 /* === EDIT PANEL show/hide === */
@@ -771,7 +805,7 @@ function triggerPreviewDebounced(){
     const id=el.dataset.sound;
     const saved=getSavedPositions()[id]||{};
     const livePar = (draftPositions?.[id]?.par) || defaultPar();
-    const cfg={ ...saved, par: {...livePar} };
+    const cfg={ ...mergePadCfg(defaultPositionsForKit([id])[id], saved), par: {...livePar} };
     startAudio();
     padDown(el, cfg);
   }, 140);
@@ -792,7 +826,7 @@ btnTest.addEventListener('click', ()=>{
   const id=el.dataset.sound;
   const saved=getSavedPositions()[id]||{};
   const livePar = (draftPositions?.[id]?.par) || defaultPar();
-  const cfg={ ...saved, par: {...livePar} };
+  const cfg={ ...mergePadCfg(defaultPositionsForKit([id])[id], saved), par: {...livePar} };
   startAudio();
   padDown(el, cfg);
 });
