@@ -54,7 +54,7 @@ body.theme-neon .btn, body.theme-neon select{
 }
 body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-shadow:0 0 14px var(--btn-glow), 0 0 0 3px rgba(0,229,255,.15)}
 
-/* Stage */
+/* Stage/layout */
 #stage{position:fixed; top:calc(var(--topbar-h) + 4px); left:0; right:0; bottom:6px; padding:.8rem; overflow:hidden; touch-action:manipulation;}
 .grid{display:grid;gap:.8rem;
   grid-template-columns:repeat(auto-fit,minmax(clamp(var(--size-min), var(--size-vw), var(--size-max)),1fr));
@@ -81,15 +81,6 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .pad .gear{display:none; position:absolute; right:6px; top:6px; width:22px; height:22px; border-radius:999px;
   border:1px solid var(--btn-br); background:var(--btn-bg); align-items:center; justify-content:center; font-size:14px; line-height:1}
 .pad.selected .gear{display:flex}
-
-/* Colors */
-.c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%); color:#fff}
-.c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%); color:#fff}
-.c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%); color:#fff}
-.c-toms{background:radial-gradient(120% 120% at 30% 30%,#2d3131,#171a1a 70%); color:#fff}
-.c-cym{background:radial-gradient(120% 120% at 30% 30%,#303227,#181a12 70%); color:#fff}
-.c-hand{background:radial-gradient(120% 120% at 30% 30%,#2a2e38,#151922 70%); color:#fff}
-.c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%); color:#fff}
 
 /* Menu */
 #menuPanel{position:fixed;inset:0;z-index:100;display:none;background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);padding:64px 14px 14px;color:var(--text)}
@@ -239,7 +230,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 </div>
 
 <script>
-/* === AUDIO CORE === */
+/* ==== AUDIO CORE ==== */
 let ctx=null, master=null, volumeNode=null;
 const vol=document.getElementById('volume');
 function initAudio(){ if(ctx) return;
@@ -256,7 +247,7 @@ const now=()=>ctx?ctx.currentTime+0.01:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
 
-/* === SYNTHS === */
+/* ==== SYNTHS ==== */
 const S={
   kick:(t=now(),par={})=>{ const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine';
     const base=160*Math.pow(2,(par.semi||0)/12); o.frequency.setValueAtTime(base,t); o.frequency.exponentialRampToValueAtTime(40,t+(par.dec||.14));
@@ -299,7 +290,7 @@ const S={
     o.connect(f).connect(g).connect(master); o.start(t); o.stop(t+Math.max(1.0,(par.dec||1.0))); }
 };
 
-/* === MAPY NUT === */
+/* ==== MAPY NUT ==== */
 const HAND={ hand1:220.00, hand2:246.94, hand3:261.63, hand4:293.66, hand5:329.63, hand6:349.23, hand7:392.00, hand8:440.00, hand9:493.88 };
 const XYL = {
   xylC4:261.63, xylD4:293.66, xylE4:329.63, xylF4:349.23, xylG4:392.00, xylA4:440.00, xylB4:493.88,
@@ -310,7 +301,7 @@ const XYL = {
 const LABELS_DIAT13={ xylC4:'C4',xylD4:'D4',xylE4:'E4',xylF4:'F4',xylG4:'G4',xylA4:'A4',xylB4:'H4',xylC5:'C5',xylD5:'D5',xylE5:'E5',xylF5:'F5',xylG5:'G5',xylA5:'A5' };
 const LABELS_CHR13={ xylC5:'C',xylCs5:'C#',xylD5:'D',xylDs5:'D#',xylE5:'E',xylF5:'F',xylFs5:'F#',xylG5:'G',xylGs5:'G#',xylA5:'A',xylAs5:'A#',xylB5:'H',xylC6:'C6' };
 
-/* === KITS === */
+/* ==== KITS ==== */
 const KITS={
   "Standard": ['kick808','snare','hatClosed','hatOpen','tomLow','tomHigh','clap','crash','ride','rim','perc','kick'],
   "Handpan":  ['hand1','hand2','hand3','hand4','hand5','hand6','hand7','hand8','hand9'],
@@ -329,7 +320,7 @@ function colorClass(id){
   return 'c-fun';
 }
 
-/* === refs & state === */
+/* ==== refs & state ==== */
 const stage=document.getElementById('stage');
 const menuBtn=document.getElementById('menuBtn');
 const menuPanel=document.getElementById('menuPanel');
@@ -343,6 +334,9 @@ const themeBtn=document.getElementById('themeBtn');
 const bpmEl=document.getElementById('bpm');
 const bpmVal=document.getElementById('bpmVal');
 const bpmTopVal=document.getElementById('bpmTopVal');
+const layoutBar=document.getElementById('layoutBar');
+const layoutSave=document.getElementById('layoutSave');
+const layoutCancel=document.getElementById('layoutCancel');
 const layoutProps=document.getElementById('layoutProps');
 
 let currentKit=localStorage.getItem('kitName')||'Standard';
@@ -368,45 +362,32 @@ function mergePadCfg(def, over){
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* === DEFAULT POSITIONS ===
-   Dzwonki: poziome belki, wypełniają szerokość; niski dół -> wysoki góra */
+/* DEFAULT POSITIONS – cymbałki: stały układ poziomych belek (niski dół -> wysoki góra) */
 function defaultPositionsForKit(list){
   const out={};
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
   const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
-  const isShortXyl = list.length===8 && list.every(id=>/^xyl/.test(id)); // „Cymbałki” (8 szt.)
+  const isShortXyl = list.length===8 && list.every(id=>/^xyl/.test(id));
 
   if (isDiat13 || isChr13 || isShortXyl){
-    const rot = 0;
-    const left = 10;           // stała pozycja X
-    const w = 80;              // szerokość belki
-    const h = isShortXyl ? 9 : 6;         // wysokość belki
-    const gap = isShortXyl ? 2 : 1.2;     // odstęp
+    const rot = 0, left = 10, w = 80, h = isShortXyl ? 9 : 6, gap = isShortXyl ? 2 : 1.2;
     const count = list.length;
     const total = count*h + (count-1)*gap;
-    const topStart = Math.max(2, 100 - total - 4); // od dołu, z marginesem
+    const topStart = Math.max(2, 100 - total - 4);
 
     const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
     const colWhite = '#f7f8f9', colBlack = '#0f0f10';
 
-    // UWAGA: id w list są w kolejności rosnącej (C..->), więc i=0 = najniższy (ma być na dole)
     list.forEach((id,i)=>{
-      const idxFromBottom = i;                     // 0 dół
-      const top = topStart + (count-1-idxFromBottom)*(h+gap); // niski dół, wysoki góra
-
+      const idxFromBottom = i;
+      const top = topStart + (count-1-idxFromBottom)*(h+gap);
       const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
                             : (isDiat13 ? (LABELS_DIAT13[id] || id.toUpperCase())
                                         : id.toUpperCase());
-
-      // kolory
       let color = pastel[i % pastel.length];
       if(isChr13){ color = (/s/.test(id) ? colBlack : colWhite); }
-
-      out[id] = {
-        left, top, w, h, rot, z:i+1, label,
-        color, shape:'oval', sound:null,
-        par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0}
-      };
+      out[id] = { left, top, w, h, rot, z:i+1, label, color, shape:'oval', sound:null,
+        par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0} };
     });
     return out;
   }
@@ -429,11 +410,10 @@ function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon')
 let theme = localStorage.getItem('theme') || 'dark'; applyTheme(theme);
 themeBtn.onclick = ()=>{ theme=(theme==='neon'?'dark':'neon'); localStorage.setItem('theme',theme); applyTheme(theme); };
 function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=String(v); }
-const bpmEl=document.getElementById('bpm');
-bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
+bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 
-/* EDIT PANEL refs */
+/* ====== EDIT PANEL refs ====== */
 const editPanel=document.getElementById('editPanel');
 const epLabel=document.getElementById('epLabel');
 const inpLabel=document.getElementById('inpLabel');
@@ -473,7 +453,15 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* RENDER */
+/* sync panel podczas przesuwania */
+function updateEditPanelFromEl(el){
+  if(!el) return;
+  if(editPanelVisible && selectedPadEl===el){
+    epLabel.textContent = el.dataset.sound.toUpperCase();
+  }
+}
+
+/* ====== RENDER ====== */
 function renderPads(){
   const list=(KITS[currentKit]||[]).slice(0,13);
   const saved=getSavedPositions();
@@ -514,7 +502,6 @@ function renderPads(){
       el.style.height=(cfg.h??6)+'%';
       el.style.zIndex=String(cfg.z||1);
       if(cfg.color) el.style.background=cfg.color;
-
       el.style.transform = `rotate(${cfg.rot||0}deg)`;
 
       const labelEl = document.createElement('div');
@@ -531,7 +518,6 @@ function renderPads(){
       el.appendChild(gear);
 
       if(layoutMode){
-        // Cymbałki: układ stały – żadnego przeciągania/uchwytów
         if(!isCymbalKit(currentKit)){
           el.addEventListener('pointerdown',(e)=>selectPad(el,e));
           makeDraggable(el);
@@ -554,7 +540,7 @@ function renderPads(){
   if(!layoutMode) clearSelectionAndHandles();
 }
 
-/* PLAY */
+/* ====== PLAY ====== */
 function padDown(el,cfg){
   startAudio();
   const id=el.dataset.sound;
@@ -584,14 +570,7 @@ function padDown(el,cfg){
   el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
 }
 
-/* LAYOUT MODE – tylko dla nie-cymbałków */
-const layoutBar=document.getElementById('layoutBar');
-const layoutSave=document.getElementById('layoutSave');
-const layoutCancel=document.getElementById('layoutCancel');
-layoutSave.onclick = ()=> exitLayout(true);
-layoutCancel.onclick = ()=> exitLayout(false);
-layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
-
+/* ====== LAYOUT MODE (tylko nie-cymbałki) ====== */
 function enterLayout(){
   if(isCymbalKit(currentKit)){ alert('Układ cymbałków jest stały. Edycja pozycji wyłączona.'); return; }
   layoutMode = true;
@@ -613,6 +592,9 @@ function exitLayout(save){
   layoutMode=false; draftPositions=null; selectedPadEl=null;
   hideEditPanel(); clearSelectionAndHandles(); renderPads();
 }
+layoutSave.onclick = ()=> exitLayout(true);
+layoutCancel.onclick = ()=> exitLayout(false);
+layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
 
 /* Drag/Scale/Rotate – nieużywane w cymbałkach */
 function stageRect(){ return stage.getBoundingClientRect(); }
@@ -634,6 +616,7 @@ function makeDraggable(el){
     const newLeft = clampPc(sl+dx), newTop = clampPc(st+dy);
     el.style.left = newLeft + '%';
     el.style.top  = newTop + '%';
+    updateEditPanelFromEl(el);
   };
   const up=()=>{ drag=false; el.classList.remove('dragging');
     removeEventListener('pointermove',move); removeEventListener('touchmove',move);
@@ -697,13 +680,14 @@ function savePadRect(el){
 }
 
 /* EDIT PANEL show/hide */
+const editPanelEl=document.getElementById('editPanel');
 function showEditPanel(anchorEl){
-  if(isCymbalKit(currentKit)) return; // brak cech pozycji dla cymbałków
-  editPanelVisible=true; editPanel.style.display='block';
+  if(isCymbalKit(currentKit)) return;
+  editPanelVisible=true; editPanelEl.style.display='block';
   if(anchorEl){
     const R=stage.getBoundingClientRect(); const P=anchorEl.getBoundingClientRect();
     const padBottomPct=((P.bottom-R.top)/R.height)*100;
-    if(padBottomPct>65){ editPanel.classList.add('at-top'); } else { editPanel.classList.remove('at-top'); }
+    if(padBottomPct>65){ editPanelEl.classList.add('at-top'); } else { editPanelEl.classList.remove('at-top'); }
   }
   const id=currentCfgId(); if(!id) return;
   const cfg=(draftPositions&&draftPositions[id]) || getSavedPositions()[id] || {};
@@ -715,7 +699,7 @@ function showEditPanel(anchorEl){
   rGain.value=p.gain; rSemi.value=p.semi; rAtk.value=p.atk; rDec.value=p.dec; rPan.value=p.pan;
   updateValueLabels();
 }
-function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
+function hideEditPanel(){ editPanelVisible=false; editPanelEl.style.display='none'; }
 function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
   document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); }
 function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
@@ -724,11 +708,6 @@ btnEPOk.addEventListener('click', ()=> hideEditPanel());
 function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 
 /* label/kolor/kształt */
-const inpLabel=document.getElementById('inpLabel');
-const btnColor=document.getElementById('btnColor');
-const inpColor=document.getElementById('inpColor');
-const selShape=document.getElementById('selShape');
-
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
@@ -743,21 +722,7 @@ btnColor.addEventListener('click', ()=> inpColor.click());
 inpColor.addEventListener('input', ()=>{ if(!selectedPadEl) return; selectedPadEl.style.background=inpColor.value; savePadRect(selectedPadEl); });
 selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return; ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c)); selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl); });
 
-/* Parametry + LIVE odsłuch (tylko audio parametry, działają dla wszystkich) */
-const liveToggle=document.getElementById('liveToggle');
-const rGain=document.getElementById('rGain');
-const rSemi=document.getElementById('rSemi');
-const rAtk=document.getElementById('rAtk');
-const rDec=document.getElementById('rDec');
-const rPan=document.getElementById('rPan');
-const lblGain=document.getElementById('lblGain');
-const lblSemi=document.getElementById('lblSemi');
-const lblAtk=document.getElementById('lblAtk');
-const lblDec=document.getElementById('lblDec');
-const lblPan=document.getElementById('lblPan');
-
-let livePreviewOn = true;
-let previewTimer = null;
+/* Parametry + LIVE odsłuch */
 function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
 function writeParToDraft(){
   const id=currentCfgId(); if(!id) return;
@@ -810,11 +775,10 @@ btnResetPar.addEventListener('click', ()=>{
   updateValueLabels(); writeParToDraft(); triggerPreviewDebounced();
 });
 
-/* MENU */
+/* ====== MENU ====== */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
 function openMenu(){
   startAudio(); fillKits(); applyUseBtn(); menuPanel.style.display='block';
-  // Zablokuj START dla cymbałków
   const cym = isCymbalKit(kitSelect.value);
   layoutStart.disabled = cym;
   layoutStart.textContent = cym ? 'Układ stały' : 'START';
@@ -842,7 +806,7 @@ sizeEl.addEventListener('input',(e)=>{
 });
 vol.addEventListener('input',()=>{ if(!volumeNode) return; volumeNode.gain.value=parseFloat(vol.value); });
 
-/* METRONOM */
+/* ====== METRONOM ====== */
 let metroOn=false, metroTimer=null;
 const metroBtn=document.getElementById('metroBtn');
 metroBtn.addEventListener('click', ()=>{
