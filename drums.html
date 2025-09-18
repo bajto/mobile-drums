@@ -71,22 +71,18 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
   touch-action:none;font-size:16px; color:#111; outline-offset:0; position:relative;
 }
 .pad .labelInner{pointer-events:none}
-.pad.active{
-  background:var(--pad-active);outline:2px solid var(--accent);
-  box-shadow:0 0 0 4px rgba(74,163,255,.15),0 10px 28px rgba(0,0,0,.4) inset;
-  transform:scale(.99)
-}
+.pad.active{background:var(--pad-active);outline:2px solid var(--accent);box-shadow:0 0 0 4px rgba(74,163,255,.15),0 10px 28px rgba(0,0,0,.4) inset;transform:scale(.99)}
 .pad.dragging{opacity:.95;outline:2px dashed var(--accent)}
 .shape-round{border-radius:12px}
 .shape-oval{border-radius:9999px}
 .shape-circle{border-radius:9999px}
 
-/* mini gear */
+/* gear */
 .pad .gear{display:none; position:absolute; right:6px; top:6px; width:22px; height:22px; border-radius:999px;
   border:1px solid var(--btn-br); background:var(--btn-bg); align-items:center; justify-content:center; font-size:14px; line-height:1}
 .pad.selected .gear{display:flex}
 
-/* Colors for generic kits */
+/* Colors */
 .c-kick{background:radial-gradient(120% 120% at 30% 30%,#2a3a20,#1c2416 70%); color:#fff}
 .c-snare{background:radial-gradient(120% 120% at 30% 30%,#2b2e3a,#171a21 70%); color:#fff}
 .c-hats{background:radial-gradient(120% 120% at 30% 30%,#27333d,#151c22 70%); color:#fff}
@@ -96,21 +92,17 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .c-fun{background:radial-gradient(120% 120% at 30% 30%,#3a2a2a,#211515 70%); color:#fff}
 
 /* Menu */
-#menuPanel{position:fixed;inset:0;z-index:100;display:none;
-  background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);
-  padding:64px 14px 14px;color:var(--text)}
+#menuPanel{position:fixed;inset:0;z-index:100;display:none;background:rgba(0,0,0,.72);backdrop-filter:saturate(1.2) blur(6px);padding:64px 14px 14px;color:var(--text)}
 .menu-card{margin:0 auto;max-width:780px;background:#0e1116;border:1px solid #2b3138;border-radius:1rem; padding:.9rem}
 .menu-section{border-top:1px solid #212832;margin-top:.7rem;padding-top:.7rem}
 .menu-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
 .menu-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.7rem}
 
 /* Layout bar */
-#layoutBar{position:fixed;left:50%;transform:translateX(-50%);
-  bottom:10px; z-index:95; display:none; gap:.5rem}
+#layoutBar{position:fixed;left:50%;transform:translateX(-50%); bottom:10px; z-index:95; display:none; gap:.5rem}
 
 /* Edit panel */
-#editPanel{position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;
-  background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)}
+#editPanel{position:fixed;left:8px;right:8px;bottom:8px;z-index:96;display:none;background:#0b0e14cc;border:1px solid #1f2633;border-radius:1rem;padding:.5rem .6rem;backdrop-filter: blur(6px)}
 #editPanel.at-top{top:8px;bottom:auto}
 #editPanel .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .pad.selected{outline:2px solid var(--accent)}
@@ -122,8 +114,7 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
 .h-rot{left:50%;top:-36px;transform:translateX(-50%);width:20px;height:20px;cursor:grab}
 
 /* Icon btn */
-.iconbtn{appearance:none;cursor:pointer;border:1px solid var(--btn-br);border-radius:.8rem;
-  background:var(--btn-bg);color:var(--text);padding:.5rem .8rem;display:flex;align-items:center;gap:.4rem}
+.iconbtn{appearance:none;cursor:pointer;border:1px solid var(--btn-br);border-radius:.8rem;background:var(--btn-bg);color:var(--text);padding:.5rem .8rem;display:flex;align-items:center;gap:.4rem}
 .icon{width:18px;height:2px;background:currentColor;position:relative;display:inline-block}
 .icon::before,.icon::after{content:"";position:absolute;left:0;right:0;height:2px;background:currentColor}
 .icon::before{top:-6px}.icon::after{top:6px}
@@ -222,7 +213,6 @@ body.theme-neon .btn.toggle[data-on="1"]{outline:2px solid var(--accent); box-sh
       <button id="btnClrSound" class="btn ghost">Usuń przypisanie</button>
     </div>
 
-    <!-- Parametry -->
     <div class="row">
       <span class="badge">Parametry:</span>
       <div style="display:flex;flex-direction:column;gap:.35rem;min-width:240px">
@@ -261,6 +251,7 @@ function initAudio(){ if(ctx) return;
   try{ const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0.0001; o.connect(g).connect(master); o.start(); o.stop(ctx.currentTime+0.02); }catch{}
 }
 function startAudio(){ if(!ctx) initAudio(); if(ctx.state!=='running'){ try{ ctx.resume(); }catch{} } }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') startAudio(); });
 const now=()=>ctx?ctx.currentTime+0.01:0;
 function noiseBuffer(){ const len=Math.floor(ctx.sampleRate*2.0), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b; }
 const sharedNoise=(()=>{let _b=null;return()=>_b||(_b=noiseBuffer())})();
@@ -338,7 +329,7 @@ function colorClass(id){
   return 'c-fun';
 }
 
-/* === UI refs & state === */
+/* === refs & state === */
 const stage=document.getElementById('stage');
 const menuBtn=document.getElementById('menuBtn');
 const menuPanel=document.getElementById('menuPanel');
@@ -363,7 +354,7 @@ let draftPositions=null;
 let selectedPadEl=null;
 let editPanelVisible=false;
 
-/* === helpers for layout merge & kit type === */
+/* helpers */
 function isCymbalKit(name){ return name.includes('Cymbałki') || name.includes('Dzwonki'); }
 function mergePadCfg(def, over){
   if(!over) return {...def};
@@ -374,11 +365,10 @@ function mergePadCfg(def, over){
   if(!out.par) out.par = def.par ? {...def.par} : {gain:1,semi:0,atk:.01,dec:.2,pan:0};
   return out;
 }
-
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* === DEFAULT POSITIONS (klawisze jak pianino dla 13) === */
+/* default positions (pianino dla 13) */
 function defaultPositionsForKit(list){
   const out={};
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
@@ -409,7 +399,6 @@ function defaultPositionsForKit(list){
     return out;
   }
 
-  // siatka dla reszty
   const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
@@ -420,7 +409,7 @@ function defaultPositionsForKit(list){
   return out;
 }
 
-/* === helpers & theme === */
+/* toggles/theme/bpm */
 function setToggle(btn,on){ btn.dataset.on = on?'1':'0'; }
 function applyUseBtn(){ setToggle(layoutUseBtn, useCanvasLayout); }
 function applyTheme(t){ document.body.classList.toggle('theme-neon', t==='neon'); setToggle(themeBtn, t==='neon'); }
@@ -430,7 +419,7 @@ function setBpmDisplay(v){ bpmVal.textContent=String(v); bpmTopVal.textContent=S
 bpmEl.addEventListener('input',(e)=>{ setBpmDisplay(e.target.value); if(metroOn) restartMetro(); });
 setBpmDisplay(bpmEl.value);
 
-/* === EDIT PANEL refs === */
+/* EDIT PANEL refs */
 const editPanel=document.getElementById('editPanel');
 const epLabel=document.getElementById('epLabel');
 const inpLabel=document.getElementById('inpLabel');
@@ -470,7 +459,7 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* sync panel while moving */
+/* sync panel during move */
 function updateEditPanelFromEl(el, liveOnly=false){
   if(!el) return;
   const id = el.dataset.sound;
@@ -492,7 +481,7 @@ function updateEditPanelFromEl(el, liveOnly=false){
   }
 }
 
-/* === RENDER === */
+/* RENDER */
 function renderPads(){
   const list=(KITS[currentKit]||[]).slice(0,13);
   const saved=getSavedPositions();
@@ -504,7 +493,6 @@ function renderPads(){
   const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : baseDefault);
 
   if(!playCanvas){
-    // GRID
     list.forEach(id=>{
       const cfg = mergePadCfg(baseDefault[id], saved[id]);
       const el=document.createElement('div');
@@ -522,7 +510,6 @@ function renderPads(){
       stage.appendChild(el);
     });
   }else{
-    // CANVAS (własny)
     list.forEach((id)=>{
       const cfg = mergePadCfg(baseDefault[id], P[id]);
       const el=document.createElement('div');
@@ -553,7 +540,10 @@ function renderPads(){
 
       if(layoutMode){
         el.addEventListener('pointerdown',(e)=>selectPad(el,e));
-        addHandles(el); makeDraggable(el);
+        makeDraggable(el);
+        // DLA CYMBAŁKÓW: żadnych uchwytów skalowania/rotacji (chroni przed „uciekaniem”)
+        if(!isCymbalKit(currentKit)) addHandles(el);
+
         el.addEventListener('dblclick', ()=>{ selectPad(el); showEditPanel(el); });
         let lpTimer=null;
         const lpStart=()=>{ clearTimeout(lpTimer); lpTimer=setTimeout(()=>{ selectPad(el); showEditPanel(el); },500); };
@@ -578,7 +568,7 @@ function renderPads(){
   if(!layoutMode) clearSelectionAndHandles();
 }
 
-/* === PLAY === */
+/* PLAY */
 function padDown(el,cfg){
   startAudio();
   const id=el.dataset.sound;
@@ -608,7 +598,7 @@ function padDown(el,cfg){
   el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
 }
 
-/* === LAYOUT MODE === */
+/* LAYOUT MODE */
 const layoutBar=document.getElementById('layoutBar');
 const layoutSave=document.getElementById('layoutSave');
 const layoutCancel=document.getElementById('layoutCancel');
@@ -637,7 +627,7 @@ layoutSave.onclick = ()=> exitLayout(true);
 layoutCancel.onclick = ()=> exitLayout(false);
 layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
 
-/* Drag/Scale/Rotate */
+/* Drag only (no resize for cymbałki) */
 function stageRect(){ return stage.getBoundingClientRect(); }
 function getRotationFromTransform(tr){ const m=/rotate\(([-\d.]+)deg\)/.exec(tr||''); return m?parseFloat(m[1]):0; }
 function clampPc(v){ return Math.min(98, Math.max(2, v)); }
@@ -668,6 +658,7 @@ function makeDraggable(el){
   el.addEventListener('pointerdown',down); el.addEventListener('touchstart',down,{passive:true});
 }
 
+/* Optional handles (wyłączone dla cymbałków) */
 function addHandles(el){
   el.querySelectorAll('.handle').forEach(h=>h.remove());
   ['nw','ne','sw','se','rot'].forEach(pos=>{
@@ -724,7 +715,7 @@ function savePadRect(el){
   };
 }
 
-/* === EDIT PANEL show/hide === */
+/* EDIT PANEL show/hide */
 function showEditPanel(anchorEl){
   editPanelVisible=true; editPanel.style.display='block';
   if(anchorEl){
@@ -837,9 +828,9 @@ btnResetPar.addEventListener('click', ()=>{
   updateValueLabels(); writeParToDraft(); triggerPreviewDebounced();
 });
 
-/* === MENU === */
+/* MENU */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
-function openMenu(){ fillKits(); applyUseBtn(); menuPanel.style.display='block'; }
+function openMenu(){ startAudio(); fillKits(); applyUseBtn(); menuPanel.style.display='block'; }
 function closeMenu(){ menuPanel.style.display='none'; }
 menuBtn.onclick=openMenu;
 menuCancel.onclick=()=>{ closeMenu(); clearSelectionAndHandles(); renderPads(); };
@@ -863,7 +854,7 @@ sizeEl.addEventListener('input',(e)=>{
 });
 vol.addEventListener('input',()=>{ if(!volumeNode) return; volumeNode.gain.value=parseFloat(vol.value); });
 
-/* === METRONOM === */
+/* METRONOM */
 let metroOn=false, metroTimer=null;
 const metroBtn=document.getElementById('metroBtn');
 metroBtn.addEventListener('click', ()=>{
@@ -889,14 +880,14 @@ function metroTick(){
   o.connect(g).connect(master); o.start(t); o.stop(t+0.08);
 }
 
-/* === INIT === */
+/* INIT */
 function initialRender(){ applyUseBtn(); renderPads(); }
 window.addEventListener('load', initialRender);
 function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); }
 window.addEventListener('pointerdown', firstGesture, {once:true});
 window.addEventListener('keydown', firstGesture, {once:true});
 
-/* Service Worker (opcjonalnie) */
+/* SW (opcjonalnie) */
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 </script>
 </body>
