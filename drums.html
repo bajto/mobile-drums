@@ -453,19 +453,14 @@ function updateValueLabels(){
 }
 function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 
-/* sync panel podczas przesuwania */
-function updateEditPanelFromEl(el){
-  if(!el) return;
-  if(editPanelVisible && selectedPadEl===el){
-    epLabel.textContent = el.dataset.sound.toUpperCase();
-  }
-}
-
 /* ====== RENDER ====== */
 function renderPads(){
   const list=(KITS[currentKit]||[]).slice(0,13);
   const saved=getSavedPositions();
-  const playCanvas=(!layoutMode && useCanvasLayout) || layoutMode;
+
+  // Wymuś „canvas” dla cymbałków/dzwonków (fix prostokąty)
+  const playCanvas = isCymbalKit(currentKit) ? true : ((!layoutMode && useCanvasLayout) || layoutMode);
+
   stage.className=playCanvas?'canvas':'grid';
   stage.innerHTML='';
 
@@ -475,8 +470,9 @@ function renderPads(){
   if(!playCanvas){
     list.forEach(id=>{
       const cfg = mergePadCfg(baseDefault[id], saved[id]);
+      const shapeName = (cfg.shape || '').replace(/^shape-/, '') || shapeClass(id).replace(/^shape-/, '');
       const el=document.createElement('div');
-      el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
+      el.className=`pad shape-${shapeName} ${colorClass(id)}`;
       el.dataset.sound=id;
       el.textContent=cfg.label || id.toUpperCase();
       if(cfg.color) el.style.background = cfg.color;
@@ -492,8 +488,9 @@ function renderPads(){
   }else{
     list.forEach((id)=>{
       const cfg = mergePadCfg(baseDefault[id], P[id]);
+      const shapeName = (cfg.shape || '').replace(/^shape-/, '') || shapeClass(id).replace(/^shape-/, '');
       const el=document.createElement('div');
-      el.className=`pad ${cfg.shape||shapeClass(id)} ${colorClass(id)}`;
+      el.className=`pad shape-${shapeName} ${colorClass(id)}`;
       el.dataset.sound=id;
 
       el.style.left=(cfg.left??10)+'%';
@@ -616,7 +613,6 @@ function makeDraggable(el){
     const newLeft = clampPc(sl+dx), newTop = clampPc(st+dy);
     el.style.left = newLeft + '%';
     el.style.top  = newTop + '%';
-    updateEditPanelFromEl(el);
   };
   const up=()=>{ drag=false; el.classList.remove('dragging');
     removeEventListener('pointermove',move); removeEventListener('touchmove',move);
@@ -679,15 +675,14 @@ function savePadRect(el){
   };
 }
 
-/* EDIT PANEL show/hide */
-const editPanelEl=document.getElementById('editPanel');
+/* ====== EDIT PANEL ====== */
 function showEditPanel(anchorEl){
   if(isCymbalKit(currentKit)) return;
-  editPanelVisible=true; editPanelEl.style.display='block';
+  editPanelVisible=true; editPanel.style.display='block';
   if(anchorEl){
     const R=stage.getBoundingClientRect(); const P=anchorEl.getBoundingClientRect();
     const padBottomPct=((P.bottom-R.top)/R.height)*100;
-    if(padBottomPct>65){ editPanelEl.classList.add('at-top'); } else { editPanelEl.classList.remove('at-top'); }
+    if(padBottomPct>65){ editPanel.classList.add('at-top'); } else { editPanel.classList.remove('at-top'); }
   }
   const id=currentCfgId(); if(!id) return;
   const cfg=(draftPositions&&draftPositions[id]) || getSavedPositions()[id] || {};
@@ -699,7 +694,7 @@ function showEditPanel(anchorEl){
   rGain.value=p.gain; rSemi.value=p.semi; rAtk.value=p.atk; rDec.value=p.dec; rPan.value=p.pan;
   updateValueLabels();
 }
-function hideEditPanel(){ editPanelVisible=false; editPanelEl.style.display='none'; }
+function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
 function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
   document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); }
 function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
