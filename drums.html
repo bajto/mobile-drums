@@ -320,7 +320,7 @@ function colorClass(id){
   return 'c-fun';
 }
 
-/* ==== helpers & storage ==== */
+/* ==== refs & state ==== */
 const stage=document.getElementById('stage');
 const menuBtn=document.getElementById('menuBtn');
 const menuPanel=document.getElementById('menuPanel');
@@ -348,6 +348,7 @@ let draftPositions=null;
 let selectedPadEl=null;
 let editPanelVisible=false;
 
+/* helpers */
 function isCymbalKit(name){ return name.includes('Cymbałki') || name.includes('Dzwonki'); }
 function mergePadCfg(def, over){
   if(!over) return {...def};
@@ -361,8 +362,7 @@ function mergePadCfg(def, over){
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* ==== DEFAULT POSITIONS ==== */
-// dzwonki chromatyczne: układ jak fortepian (białe + czarne nad)
+/* DEFAULT POSITIONS – fortepian dla chromatycznych; stały layout dla dzwonków */
 function defaultPositionsForKit(list){
   const out={};
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
@@ -409,7 +409,6 @@ function defaultPositionsForKit(list){
     return out;
   }
 
-  // diatoniczne 13 oraz krótkie (8) – poziome belki od dołu do góry
   if (isDiat13 || isShortXyl){
     const rot = 0, left = 10, w = 80, h = isShortXyl ? 9 : 6, gap = isShortXyl ? 2 : 1.2;
     const count = list.length;
@@ -428,7 +427,7 @@ function defaultPositionsForKit(list){
     return out;
   }
 
-  // reszta – siatka
+  // siatka dla pozostałych
   const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
@@ -502,7 +501,7 @@ function renderPads(){
   stage.innerHTML='';
 
   const baseDefault = defaultPositionsForKit(list);
-  const P = isCym ? baseDefault       // <-- stały układ dzwonków
+  const P = isCym ? baseDefault
                   : (layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : baseDefault));
 
   if(!playCanvas){
@@ -526,8 +525,7 @@ function renderPads(){
   }else{
     list.forEach((id)=>{
       let cfg = mergePadCfg(baseDefault[id], P[id]);
-      if(isCym){ cfg.shape='oval'; cfg.rot=0; } // wymuś kształt i brak obrotu dla dzwonków
-
+      if(isCym){ cfg.shape='oval'; cfg.rot=0; }
       const shapeName = (cfg.shape || '').replace(/^shape-/, '') || shapeClass(id).replace(/^shape-/, '');
       const el=document.createElement('div');
       el.className=`pad shape-${shapeName} ${colorClass(id)}`;
@@ -631,13 +629,11 @@ function exitLayout(save){
   layoutMode=false; draftPositions=null; selectedPadEl=null;
   hideEditPanel(); clearSelectionAndHandles(); renderPads();
 }
-const layoutSave=document.getElementById('layoutSave');
-const layoutCancel=document.getElementById('layoutCancel');
-const layoutProps=document.getElementById('layoutProps');
 layoutSave.onclick = ()=> exitLayout(true);
 layoutCancel.onclick = ()=> exitLayout(false);
 layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
 
+/* Drag/Scale/Rotate – nieużywane w cymbałkach */
 function makeDraggable(el){
   let sx=0,sy=0,sl=0,st=0,drag=false;
   const down=(ev)=>{ if(!layoutMode) return;
@@ -717,14 +713,13 @@ function savePadRect(el){
 }
 
 /* ====== EDIT PANEL ====== */
-const editPanelEl=document.getElementById('editPanel');
 function showEditPanel(anchorEl){
   if(isCymbalKit(currentKit)) return;
-  editPanelVisible=true; editPanelEl.style.display='block';
+  editPanelVisible=true; editPanel.style.display='block';
   if(anchorEl){
     const R=stage.getBoundingClientRect(); const P=anchorEl.getBoundingClientRect();
     const padBottomPct=((P.bottom-R.top)/R.height)*100;
-    if(padBottomPct>65){ editPanelEl.classList.add('at-top'); } else { editPanelEl.classList.remove('at-top'); }
+    if(padBottomPct>65){ editPanel.classList.add('at-top'); } else { editPanel.classList.remove('at-top'); }
   }
   const id=currentCfgId(); if(!id) return;
   const cfg=(draftPositions&&draftPositions[id]) || getSavedPositions()[id] || {};
@@ -736,7 +731,7 @@ function showEditPanel(anchorEl){
   rGain.value=p.gain; rSemi.value=p.semi; rAtk.value=p.atk; rDec.value=p.dec; rPan.value=p.pan;
   updateValueLabels();
 }
-function hideEditPanel(){ editPanelVisible=false; editPanelEl.style.display='none'; }
+function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
 function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
   document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); }
 function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
@@ -745,11 +740,6 @@ btnEPOk.addEventListener('click', ()=> hideEditPanel());
 function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 
 /* label/kolor/kształt */
-const epLabel=document.getElementById('epLabel');
-const inpLabel=document.getElementById('inpLabel');
-const btnColor=document.getElementById('btnColor');
-const inpColor=document.getElementById('inpColor');
-const selShape=document.getElementById('selShape');
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
@@ -765,30 +755,7 @@ inpColor.addEventListener('input', ()=>{ if(!selectedPadEl) return; selectedPadE
 selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return; ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c)); selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl); });
 
 /* Parametry + LIVE odsłuch */
-const rGain=document.getElementById('rGain');
-const rSemi=document.getElementById('rSemi');
-const rAtk=document.getElementById('rAtk');
-const rDec=document.getElementById('rDec');
-const rPan=document.getElementById('rPan');
-const lblGain=document.getElementById('lblGain');
-const lblSemi=document.getElementById('lblSemi');
-const lblAtk=document.getElementById('lblAtk');
-const lblDec=document.getElementById('lblDec');
-const lblPan=document.getElementById('lblPan');
-const liveToggle=document.getElementById('liveToggle');
-const btnTest=document.getElementById('btnTest');
-const btnResetPar=document.getElementById('btnResetPar');
-
 function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
-function updateValueLabels(){
-  const g=parseFloat(rGain.value);
-  lblGain.textContent=`${g.toFixed(2)} (${(g<=0?'-∞':(20*Math.log10(g)).toFixed(1))} dB)`;
-  lblSemi.textContent=`${parseInt(rSemi.value,10)}`;
-  lblAtk.textContent =`${parseFloat(rAtk.value).toFixed(2)} s`;
-  lblDec.textContent =`${parseFloat(rDec.value).toFixed(2)} s`;
-  lblPan.textContent =`${parseFloat(rPan.value).toFixed(1)}`;
-}
-function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 function writeParToDraft(){
   const id=currentCfgId(); if(!id) return;
   draftPositions = draftPositions||{}; draftPositions[id]=draftPositions[id]||{};
@@ -815,7 +782,9 @@ function triggerPreviewDebounced(){
 }
 [rGain,rSemi,rAtk,rDec,rPan].forEach(inp=>{
   inp.addEventListener('input', ()=>{
-    updateValueLabels(); writeParToDraft(); triggerPreviewDebounced();
+    updateValueLabels();
+    writeParToDraft();
+    triggerPreviewDebounced();
   });
 });
 liveToggle.addEventListener('click', ()=>{
@@ -840,7 +809,7 @@ btnResetPar.addEventListener('click', ()=>{
 /* ====== MENU ====== */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
 function openMenu(){
-  startAudio(); fillKits(); setToggle(layoutUseBtn, useCanvasLayout); menuPanel.style.display='block';
+  startAudio(); fillKits(); applyUseBtn(); menuPanel.style.display='block';
   const cym = isCymbalKit(kitSelect.value);
   layoutStart.disabled = cym;
   layoutStart.textContent = cym ? 'Układ stały' : 'START';
@@ -855,7 +824,7 @@ menuOk.onclick=()=>{
 };
 layoutStart.onclick=()=>{ if(isCymbalKit(currentKit)){ alert('Układ dzwonków jest stały.'); closeMenu(); return; } closeMenu(); enterLayout(); };
 layoutUseBtn.addEventListener('click', ()=>{
-  useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); setToggle(layoutUseBtn, useCanvasLayout);
+  useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); applyUseBtn();
   if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
 });
 
@@ -894,7 +863,7 @@ function metroTick(){
 }
 
 /* INIT */
-function initialRender(){ setToggle(layoutUseBtn, useCanvasLayout); renderPads(); }
+function initialRender(){ applyUseBtn(); renderPads(); }
 window.addEventListener('load', initialRender);
 function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); }
 window.addEventListener('pointerdown', firstGesture, {once:true});
