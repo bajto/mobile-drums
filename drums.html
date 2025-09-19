@@ -320,7 +320,7 @@ function colorClass(id){
   return 'c-fun';
 }
 
-/* ==== refs & state ==== */
+/* ==== helpers & storage ==== */
 const stage=document.getElementById('stage');
 const menuBtn=document.getElementById('menuBtn');
 const menuPanel=document.getElementById('menuPanel');
@@ -348,7 +348,6 @@ let draftPositions=null;
 let selectedPadEl=null;
 let editPanelVisible=false;
 
-/* helpers */
 function isCymbalKit(name){ return name.includes('Cymbałki') || name.includes('Dzwonki'); }
 function mergePadCfg(def, over){
   if(!over) return {...def};
@@ -362,37 +361,74 @@ function mergePadCfg(def, over){
 function getSavedPositions(){ try{ return JSON.parse(localStorage.getItem(positionsKey())||'{}'); }catch{return{};}}
 function setSavedPositions(obj){ localStorage.setItem(positionsKey(), JSON.stringify(obj||{})); }
 
-/* DEFAULT POSITIONS – cymbałki: stały układ poziomych belek (niski dół -> wysoki góra) */
+/* ==== DEFAULT POSITIONS ==== */
+// dzwonki chromatyczne: układ jak fortepian (białe + czarne nad)
 function defaultPositionsForKit(list){
   const out={};
   const isDiat13 = (list.length===13) && list.every(id => (id in LABELS_DIAT13) || id==='xylA5');
   const isChr13  = (list.length===13) && list.every(id => (id in LABELS_CHR13)  || id==='xylC6');
   const isShortXyl = list.length===8 && list.every(id=>/^xyl/.test(id));
 
-  if (isDiat13 || isChr13 || isShortXyl){
+  if (isChr13){
+    const whites = ['xylC5','xylD5','xylE5','xylF5','xylG5','xylA5','xylB5','xylC6'];
+    const blackBelow = { xylCs5:'xylC5', xylDs5:'xylD5', xylFs5:'xylF5', xylGs5:'xylG5', xylAs5:'xylA5' };
+
+    const leftW = 10,  wW = 80,  hW = 6,  gapW = 1.2;
+    const leftB = 25,  wB = 50,  hB = 4.2;
+    const countW = whites.length;
+    const totalW = countW*hW + (countW-1)*gapW;
+    const topStart = Math.max(2, 100 - totalW - 4);
+
+    const colWhite = '#f7f8f9', colBlack = '#0f0f10';
+
+    const whitePos = {};
+    whites.forEach((id,i)=>{
+      const top = topStart + (countW-1-i)*(hW+gapW);
+      whitePos[id] = { left:leftW, top, w:wW, h:hW, rot:0, z:10+i,
+        label: LABELS_CHR13[id] || id.toUpperCase(),
+        color: colWhite, shape:'oval', sound:null,
+        par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0} };
+      out[id] = whitePos[id];
+    });
+
+    Object.entries(blackBelow).forEach(([black, belowId], idx)=>{
+      const below = whitePos[belowId];
+      const nextIndex = whites.indexOf(belowId)+1;
+      const aboveId = whites[nextIndex];
+      if(!below || !aboveId) return;
+      const above = whitePos[aboveId];
+      const top = (below.top + above.top + hW)/2 - hB/2;
+      out[black] = { left:leftB, top, w:wB, h:hB, rot:0, z:100+idx,
+        label: LABELS_CHR13[black] || black.toUpperCase(),
+        color: colBlack, shape:'oval', sound:null,
+        par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0} };
+    });
+
+    const present = new Set(list);
+    Object.keys(out).forEach(id=>{ if(!present.has(id)) delete out[id]; });
+    return out;
+  }
+
+  // diatoniczne 13 oraz krótkie (8) – poziome belki od dołu do góry
+  if (isDiat13 || isShortXyl){
     const rot = 0, left = 10, w = 80, h = isShortXyl ? 9 : 6, gap = isShortXyl ? 2 : 1.2;
     const count = list.length;
     const total = count*h + (count-1)*gap;
     const topStart = Math.max(2, 100 - total - 4);
 
-    const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da','#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
-    const colWhite = '#f7f8f9', colBlack = '#0f0f10';
-
+    const pastel = ['#e53935','#fb8c00','#fdd835','#43a047','#1e88e5','#8e24aa','#7e57c2','#26c6da',
+                    '#90caf9','#66bb6a','#ffb74d','#ef9a9a','#ba68c8'];
     list.forEach((id,i)=>{
-      const idxFromBottom = i;
-      const top = topStart + (count-1-idxFromBottom)*(h+gap);
-      const label = isChr13 ? (LABELS_CHR13[id] || id.toUpperCase())
-                            : (isDiat13 ? (LABELS_DIAT13[id] || id.toUpperCase())
-                                        : id.toUpperCase());
-      let color = pastel[i % pastel.length];
-      if(isChr13){ color = (/s/.test(id) ? colBlack : colWhite); }
+      const top = topStart + (count-1-i)*(h+gap);
+      const label = isDiat13 ? (LABELS_DIAT13[id] || id.toUpperCase()) : id.toUpperCase();
+      const color = pastel[i % pastel.length];
       out[id] = { left, top, w, h, rot, z:i+1, label, color, shape:'oval', sound:null,
         par:{gain:1,semi:0,atk:0.01,dec:0.9,pan:0} };
     });
     return out;
   }
 
-  // siatka dla reszty
+  // reszta – siatka
   const cols=3, rows=Math.ceil(list.length/cols);
   const cellW=(100-8)/cols, cellH=(100-8)/Math.max(rows,2);
   list.forEach((id,i)=>{ const c=i%cols, r=Math.floor(i/cols);
@@ -458,14 +494,16 @@ function renderPads(){
   const list=(KITS[currentKit]||[]).slice(0,13);
   const saved=getSavedPositions();
 
-  // Wymuś „canvas” dla cymbałków/dzwonków (fix prostokąty)
-  const playCanvas = isCymbalKit(currentKit) ? true : ((!layoutMode && useCanvasLayout) || layoutMode);
+  // Dzwonki/cymbałki: zawsze canvas i stały layout (ignorujemy storage)
+  const isCym = isCymbalKit(currentKit);
+  const playCanvas = isCym ? true : ((!layoutMode && useCanvasLayout) || layoutMode);
 
   stage.className=playCanvas?'canvas':'grid';
   stage.innerHTML='';
 
   const baseDefault = defaultPositionsForKit(list);
-  const P = layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : baseDefault);
+  const P = isCym ? baseDefault       // <-- stały układ dzwonków
+                  : (layoutMode ? (draftPositions||{}) : (Object.keys(saved).length? saved : baseDefault));
 
   if(!playCanvas){
     list.forEach(id=>{
@@ -487,7 +525,9 @@ function renderPads(){
     });
   }else{
     list.forEach((id)=>{
-      const cfg = mergePadCfg(baseDefault[id], P[id]);
+      let cfg = mergePadCfg(baseDefault[id], P[id]);
+      if(isCym){ cfg.shape='oval'; cfg.rot=0; } // wymuś kształt i brak obrotu dla dzwonków
+
       const shapeName = (cfg.shape || '').replace(/^shape-/, '') || shapeClass(id).replace(/^shape-/, '');
       const el=document.createElement('div');
       el.className=`pad shape-${shapeName} ${colorClass(id)}`;
@@ -511,16 +551,14 @@ function renderPads(){
       el.appendChild(labelEl);
 
       const gear=document.createElement('div'); gear.className='gear'; gear.textContent='⚙️';
-      gear.addEventListener('click',(ev)=>{ ev.stopPropagation(); selectPad(el); showEditPanel(el); });
+      gear.addEventListener('click',(ev)=>{ ev.stopPropagation(); selectPad(el); if(!isCym) showEditPanel(el); });
       el.appendChild(gear);
 
-      if(layoutMode){
-        if(!isCymbalKit(currentKit)){
-          el.addEventListener('pointerdown',(e)=>selectPad(el,e));
-          makeDraggable(el);
-          addHandles(el);
-          el.addEventListener('dblclick', ()=>{ selectPad(el); showEditPanel(el); });
-        }
+      if(layoutMode && !isCym){
+        el.addEventListener('pointerdown',(e)=>selectPad(el,e));
+        makeDraggable(el);
+        addHandles(el);
+        el.addEventListener('dblclick', ()=>{ selectPad(el); showEditPanel(el); });
       }else{
         const down = (e)=>{ e.preventDefault?.(); startAudio(); padDown(el,cfg); };
         el.addEventListener('pointerdown', down, {passive:false});
@@ -532,8 +570,8 @@ function renderPads(){
     });
   }
 
-  layoutBar.style.display = (layoutMode && !isCymbalKit(currentKit)) ? 'flex' : 'none';
-  editPanel.style.display = (layoutMode && editPanelVisible && !isCymbalKit(currentKit))?'block':'none';
+  layoutBar.style.display = (layoutMode && !isCym) ? 'flex' : 'none';
+  editPanel.style.display = (layoutMode && editPanelVisible && !isCym)?'block':'none';
   if(!layoutMode) clearSelectionAndHandles();
 }
 
@@ -567,9 +605,13 @@ function padDown(el,cfg){
   el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),140);
 }
 
-/* ====== LAYOUT MODE (tylko nie-cymbałki) ====== */
+/* ====== LAYOUT MODE (nie dotyczy dzwonków) ====== */
+function stageRect(){ return stage.getBoundingClientRect(); }
+function getRotationFromTransform(tr){ const m=/rotate\(([-\d.]+)deg\)/.exec(tr||''); return m?parseFloat(m[1]):0; }
+function clampPc(v){ return Math.min(98, Math.max(2, v)); }
+
 function enterLayout(){
-  if(isCymbalKit(currentKit)){ alert('Układ cymbałków jest stały. Edycja pozycji wyłączona.'); return; }
+  if(isCymbalKit(currentKit)){ alert('Układ dzwonków/cymbałków jest stały. Edycja pozycji wyłączona.'); return; }
   layoutMode = true;
   const list = (KITS[currentKit]||[]).slice(0,13);
   const saved = getSavedPositions();
@@ -589,14 +631,13 @@ function exitLayout(save){
   layoutMode=false; draftPositions=null; selectedPadEl=null;
   hideEditPanel(); clearSelectionAndHandles(); renderPads();
 }
+const layoutSave=document.getElementById('layoutSave');
+const layoutCancel=document.getElementById('layoutCancel');
+const layoutProps=document.getElementById('layoutProps');
 layoutSave.onclick = ()=> exitLayout(true);
 layoutCancel.onclick = ()=> exitLayout(false);
 layoutProps.onclick = ()=>{ if(selectedPadEl){ showEditPanel(selectedPadEl); } else { alert('Wybierz pad (stuknij), potem „Cechy…”'); } };
 
-/* Drag/Scale/Rotate – nieużywane w cymbałkach */
-function stageRect(){ return stage.getBoundingClientRect(); }
-function getRotationFromTransform(tr){ const m=/rotate\(([-\d.]+)deg\)/.exec(tr||''); return m?parseFloat(m[1]):0; }
-function clampPc(v){ return Math.min(98, Math.max(2, v)); }
 function makeDraggable(el){
   let sx=0,sy=0,sl=0,st=0,drag=false;
   const down=(ev)=>{ if(!layoutMode) return;
@@ -676,13 +717,14 @@ function savePadRect(el){
 }
 
 /* ====== EDIT PANEL ====== */
+const editPanelEl=document.getElementById('editPanel');
 function showEditPanel(anchorEl){
   if(isCymbalKit(currentKit)) return;
-  editPanelVisible=true; editPanel.style.display='block';
+  editPanelVisible=true; editPanelEl.style.display='block';
   if(anchorEl){
     const R=stage.getBoundingClientRect(); const P=anchorEl.getBoundingClientRect();
     const padBottomPct=((P.bottom-R.top)/R.height)*100;
-    if(padBottomPct>65){ editPanel.classList.add('at-top'); } else { editPanel.classList.remove('at-top'); }
+    if(padBottomPct>65){ editPanelEl.classList.add('at-top'); } else { editPanelEl.classList.remove('at-top'); }
   }
   const id=currentCfgId(); if(!id) return;
   const cfg=(draftPositions&&draftPositions[id]) || getSavedPositions()[id] || {};
@@ -694,7 +736,7 @@ function showEditPanel(anchorEl){
   rGain.value=p.gain; rSemi.value=p.semi; rAtk.value=p.atk; rDec.value=p.dec; rPan.value=p.pan;
   updateValueLabels();
 }
-function hideEditPanel(){ editPanelVisible=false; editPanel.style.display='none'; }
+function hideEditPanel(){ editPanelVisible=false; editPanelEl.style.display='none'; }
 function selectPad(el,e){ e?.preventDefault?.(); selectedPadEl=el;
   document.querySelectorAll('.pad').forEach(p=>p.classList.toggle('selected', p===el)); }
 function clearSelectionAndHandles(){ document.querySelectorAll('.pad.selected').forEach(p=>p.classList.remove('selected'));
@@ -703,6 +745,11 @@ btnEPOk.addEventListener('click', ()=> hideEditPanel());
 function currentCfgId(){ return selectedPadEl?.dataset.sound; }
 
 /* label/kolor/kształt */
+const epLabel=document.getElementById('epLabel');
+const inpLabel=document.getElementById('inpLabel');
+const btnColor=document.getElementById('btnColor');
+const inpColor=document.getElementById('inpColor');
+const selShape=document.getElementById('selShape');
 inpLabel.addEventListener('input', ()=>{
   if(!selectedPadEl) return;
   const gear=selectedPadEl.querySelector('.gear');
@@ -718,7 +765,30 @@ inpColor.addEventListener('input', ()=>{ if(!selectedPadEl) return; selectedPadE
 selShape.addEventListener('change', ()=>{ if(!selectedPadEl) return; ['shape-round','shape-oval','shape-circle'].forEach(c=>selectedPadEl.classList.remove(c)); selectedPadEl.classList.add('shape-'+selShape.value); savePadRect(selectedPadEl); });
 
 /* Parametry + LIVE odsłuch */
+const rGain=document.getElementById('rGain');
+const rSemi=document.getElementById('rSemi');
+const rAtk=document.getElementById('rAtk');
+const rDec=document.getElementById('rDec');
+const rPan=document.getElementById('rPan');
+const lblGain=document.getElementById('lblGain');
+const lblSemi=document.getElementById('lblSemi');
+const lblAtk=document.getElementById('lblAtk');
+const lblDec=document.getElementById('lblDec');
+const lblPan=document.getElementById('lblPan');
+const liveToggle=document.getElementById('liveToggle');
+const btnTest=document.getElementById('btnTest');
+const btnResetPar=document.getElementById('btnResetPar');
+
 function clampNum(v,min,max,def){ v=isFinite(v)?v:def; return Math.min(max,Math.max(min,v)); }
+function updateValueLabels(){
+  const g=parseFloat(rGain.value);
+  lblGain.textContent=`${g.toFixed(2)} (${(g<=0?'-∞':(20*Math.log10(g)).toFixed(1))} dB)`;
+  lblSemi.textContent=`${parseInt(rSemi.value,10)}`;
+  lblAtk.textContent =`${parseFloat(rAtk.value).toFixed(2)} s`;
+  lblDec.textContent =`${parseFloat(rDec.value).toFixed(2)} s`;
+  lblPan.textContent =`${parseFloat(rPan.value).toFixed(1)}`;
+}
+function defaultPar(){ return {gain:1,semi:0,atk:0.01,dec:0.2,pan:0}; }
 function writeParToDraft(){
   const id=currentCfgId(); if(!id) return;
   draftPositions = draftPositions||{}; draftPositions[id]=draftPositions[id]||{};
@@ -731,7 +801,7 @@ function writeParToDraft(){
   };
 }
 function triggerPreviewDebounced(){
-  if(!livePreviewOn) return;
+  if(liveToggle.dataset.on!=='1') return;
   clearTimeout(previewTimer);
   previewTimer = setTimeout(()=>{
     const el=selectedPadEl; if(!el) return;
@@ -745,14 +815,11 @@ function triggerPreviewDebounced(){
 }
 [rGain,rSemi,rAtk,rDec,rPan].forEach(inp=>{
   inp.addEventListener('input', ()=>{
-    updateValueLabels();
-    writeParToDraft();
-    triggerPreviewDebounced();
+    updateValueLabels(); writeParToDraft(); triggerPreviewDebounced();
   });
 });
 liveToggle.addEventListener('click', ()=>{
-  livePreviewOn = !(liveToggle.dataset.on==='1');
-  liveToggle.dataset.on = livePreviewOn ? '1':'0';
+  liveToggle.dataset.on = (liveToggle.dataset.on==='1'?'0':'1');
 });
 btnTest.addEventListener('click', ()=>{
   const el=selectedPadEl; if(!el) return;
@@ -773,7 +840,7 @@ btnResetPar.addEventListener('click', ()=>{
 /* ====== MENU ====== */
 function fillKits(){ kitSelect.innerHTML=''; Object.keys(KITS).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; if(k===currentKit) o.selected=true; kitSelect.appendChild(o); }); }
 function openMenu(){
-  startAudio(); fillKits(); applyUseBtn(); menuPanel.style.display='block';
+  startAudio(); fillKits(); setToggle(layoutUseBtn, useCanvasLayout); menuPanel.style.display='block';
   const cym = isCymbalKit(kitSelect.value);
   layoutStart.disabled = cym;
   layoutStart.textContent = cym ? 'Układ stały' : 'START';
@@ -786,9 +853,9 @@ menuOk.onclick=()=>{
   if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
   closeMenu();
 };
-layoutStart.onclick=()=>{ if(isCymbalKit(currentKit)){ alert('Układ cymbałków jest stały.'); closeMenu(); return; } closeMenu(); enterLayout(); };
+layoutStart.onclick=()=>{ if(isCymbalKit(currentKit)){ alert('Układ dzwonków jest stały.'); closeMenu(); return; } closeMenu(); enterLayout(); };
 layoutUseBtn.addEventListener('click', ()=>{
-  useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); applyUseBtn();
+  useCanvasLayout=!useCanvasLayout; localStorage.setItem(layoutUseKey, useCanvasLayout?'1':'0'); setToggle(layoutUseBtn, useCanvasLayout);
   if(layoutMode) exitLayout(true); else { clearSelectionAndHandles(); renderPads(); }
 });
 
@@ -806,8 +873,7 @@ let metroOn=false, metroTimer=null;
 const metroBtn=document.getElementById('metroBtn');
 metroBtn.addEventListener('click', ()=>{
   const on=metroBtn.dataset.on==='1';
-  setToggle(metroBtn, !on);
-  metroOn=!on;
+  metroOn=!on; setToggle(metroBtn, metroOn);
   startAudio();
   if(metroOn){ startMetro(); } else { stopMetro(); }
 });
@@ -828,7 +894,7 @@ function metroTick(){
 }
 
 /* INIT */
-function initialRender(){ applyUseBtn(); renderPads(); }
+function initialRender(){ setToggle(layoutUseBtn, useCanvasLayout); renderPads(); }
 window.addEventListener('load', initialRender);
 function firstGesture(){ startAudio(); window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); }
 window.addEventListener('pointerdown', firstGesture, {once:true});
